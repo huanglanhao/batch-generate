@@ -41,6 +41,12 @@ function resolveImportTemplatePath() {
     : path.join(app.getAppPath(), 'resources', 'templates', IMPORT_TEMPLATE_FILE_NAME);
 }
 
+function resolveAppIconPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'app-icon.png')
+    : path.join(app.getAppPath(), 'src', 'renderer', 'assets', 'logo', 'logo.png');
+}
+
 async function readImageAsDataUrl(filePath) {
   if (!filePath) return null;
   const buffer = await fs.promises.readFile(filePath);
@@ -116,6 +122,7 @@ async function createWindow() {
     height: 980,
     minWidth: 1280,
     minHeight: 820,
+    icon: resolveAppIconPath(),
     backgroundColor: '#eef3fb',
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
@@ -149,6 +156,7 @@ async function createExportCaptureWindow(token) {
     show: false,
     width: 794,
     height: 1123,
+    icon: resolveAppIconPath(),
     useContentSize: true,
     resizable: false,
     movable: false,
@@ -170,6 +178,10 @@ async function createExportCaptureWindow(token) {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === 'darwin' && app.dock?.setIcon) {
+    app.dock.setIcon(resolveAppIconPath());
+  }
+
   ipcMain.handle('app:get-meta', () => ({
     version: app.getVersion(),
     isDevelopment,

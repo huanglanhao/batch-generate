@@ -1,8 +1,8 @@
 {
-  "name": "pdd-application-form",
-  "productName": "统一申请书生成器",
+  "name": "batch-generate",
+  "productName": "批量申请书生成器",
   "version": "0.1.0",
-  "description": "统一申请书生成器桌面应用",
+  "description": "批量申请书生成器桌面应用",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "concurrently -k \"pnpm dev:renderer\" \"pnpm dev:electron\"",
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.yuanweiba.pdd.application.form",
-    "productName": "统一申请书生成器",
+    "productName": "批量申请书生成器",
     "asar": true,
     "directories": {
       "output": "release"
@@ -29,8 +29,13 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "src/renderer/assets/logo/logo.png",
+        "to": "assets/app-icon.png"
       }
     ],
+    "icon": "build/icon.png",
     "files": [
       "dist/**/*",
       "src/main/**/*",
@@ -38,6 +43,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",
@@ -54,7 +60,7 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "runAfterFinish": false,
-      "shortcutName": "统一申请书生成器",
+      "shortcutName": "批量申请书生成器",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "include": "build/installer.nsh"
     }

@@ -97,7 +97,7 @@ function normalizeLoadedTemplate(template = {}) {
   return {
     ...DEFAULT_TEMPLATE,
     ...template,
-    title: template.title === '统一申请书' ? DEFAULT_TEMPLATE.title : (template.title || DEFAULT_TEMPLATE.title),
+    title: template.title === '批量申请书' ? DEFAULT_TEMPLATE.title : (template.title || DEFAULT_TEMPLATE.title),
     fontFamily:
       template.fontFamily === LEGACY_TEMPLATE.fontFamily
       || normalizedFontFamily === '"SimSun", serif'

@@ -1,6 +1,6 @@
-# 统一申请书生成器
+# 批量申请书生成器
 
-基于 `Electron + Vue 3 + Vite + electron-builder` 的桌面项目骨架，面向统一申请书批量生成、固定位置盖章和 JPG 导出场景。
+基于 `Electron + Vue 3 + Vite + electron-builder` 的桌面项目骨架，面向批量申请书批量生成、固定位置盖章和 JPG 导出场景。
 
 ## 交接文档
 

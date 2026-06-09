@@ -1,10 +1,10 @@
 !macro closeRunningApplicationForm
-  DetailPrint "正在检查并关闭运行中的统一申请书生成器..."
-  nsExec::ExecToStack 'taskkill /IM "统一申请书生成器.exe"'
+  DetailPrint "正在检查并关闭运行中的批量申请书生成器..."
+  nsExec::ExecToStack 'taskkill /IM "批量申请书生成器.exe"'
   Pop $0
   Pop $1
   Sleep 1200
-  nsExec::ExecToStack 'taskkill /F /IM "统一申请书生成器.exe"'
+  nsExec::ExecToStack 'taskkill /F /IM "批量申请书生成器.exe"'
   Pop $0
   Pop $1
   Sleep 500

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
+import appLogo from '../assets/logo/logo.png';
 
 const props = defineProps({
   collapsed: {
@@ -50,11 +51,11 @@ const toggleLabel = computed(() => (props.collapsed ? '展开左侧目录' : '�
     <div class="brand-block" :class="{ 'is-collapsed': collapsed }">
       <template v-if="collapsed">
         <p class="brand-mark">BG</p>
-        <p class="brand-mini">申</p>
+        <p class="brand-mini">量</p>
       </template>
       <template v-else>
         <p class="brand-mark">Batch Generator</p>
-        <h2>统一申请书生成器</h2>
+        <h2>批量申请书生成器</h2>
         <p class="brand-desc">
           批量生成申请模版，简单便捷、提高工作效率。
         </p>
