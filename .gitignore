@@ -7,3 +7,4 @@ dist
 .runtime-data
 .dbg
 .trae
+*.code-workspace
