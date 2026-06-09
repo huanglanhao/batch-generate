@@ -1,0 +1,82 @@
+{
+  "name": "pdd-application-form",
+  "productName": "统一申请书生成器",
+  "version": "0.1.0",
+  "description": "统一申请书生成器桌面应用",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"pnpm dev:renderer\" \"pnpm dev:electron\"",
+    "dev:renderer": "vite --config vite.config.js",
+    "dev:electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "start": "electron .",
+    "vue:build": "vite build --config vite.config.js",
+    "build:win": "pnpm vue:build && electron-builder --win nsis",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.yuanweiba.pdd.application.form",
+    "productName": "统一申请书生成器",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "extraResources": [
+      {
+        "from": "resources/templates",
+        "to": "templates",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/preload/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "runAfterFinish": false,
+      "shortcutName": "统一申请书生成器",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "include": "build/installer.nsh"
+    }
+  },
+  "author": "hlh",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.12",
+    "jsdom": "^26.1.0",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "electron-store": "8",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.21",
+    "vue-router": "^4.5.1",
+    "wait-on": "^8.0.5",
+    "xlsx": "^0.18.5"
+  }
+}

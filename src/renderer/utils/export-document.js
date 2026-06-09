@@ -1,0 +1,119 @@
+import { buildRichTextDataUrl } from './rich-text';
+
+const SHEET_WIDTH = 794;
+const SHEET_HEIGHT = 1123;
+const STAMP_IMAGE_SCALE = 0.72;
+const EXPORT_RENDER_SCALE = 3;
+const PAGE_EDITOR_BOX = {
+  x: 0,
+  y: 0,
+  width: SHEET_WIDTH,
+  height: SHEET_HEIGHT,
+};
+
+function scaleBox(box, scale) {
+  return {
+    x: box.x * scale,
+    y: box.y * scale,
+    width: box.width * scale,
+    height: box.height * scale,
+  };
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+function getScaledStampRect(box, image) {
+  const targetWidth = box.width * STAMP_IMAGE_SCALE;
+  const targetHeight = box.height * STAMP_IMAGE_SCALE;
+  const imageRatio = image.width / image.height;
+  const targetRatio = targetWidth / targetHeight;
+
+  let drawWidth = targetWidth;
+  let drawHeight = targetHeight;
+
+  if (imageRatio > targetRatio) {
+    drawHeight = targetWidth / imageRatio;
+  } else {
+    drawWidth = targetHeight * imageRatio;
+  }
+
+  return {
+    x: box.x + (box.width - drawWidth) / 2,
+    y: box.y + (box.height - drawHeight) / 2,
+    width: drawWidth,
+    height: drawHeight,
+  };
+}
+
+function drawStampBoxBorder(ctx, box) {
+  const borderWidth = 2;
+  const left = box.x + borderWidth / 2;
+  const top = box.y + borderWidth / 2;
+  const right = box.x + box.width - borderWidth / 2;
+  const bottom = box.y + box.height - borderWidth / 2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.lineWidth = borderWidth;
+
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(right, top);
+  ctx.moveTo(left, bottom);
+  ctx.lineTo(right, bottom);
+  ctx.stroke();
+
+  ctx.setLineDash([16, 8]);
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, bottom);
+  ctx.moveTo(right, top);
+  ctx.lineTo(right, bottom);
+  ctx.stroke();
+  ctx.restore();
+}
+
+export async function renderDocumentPageToJpegDataUrl({ pageName, template, stamp, quality = 1 }) {
+  const exportWidth = SHEET_WIDTH * EXPORT_RENDER_SCALE;
+  const exportHeight = SHEET_HEIGHT * EXPORT_RENDER_SCALE;
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = exportWidth;
+  exportCanvas.height = exportHeight;
+
+  const exportCtx = exportCanvas.getContext('2d');
+  exportCtx.fillStyle = '#ffffff';
+  exportCtx.fillRect(0, 0, exportWidth, exportHeight);
+
+  const richTextImage = await loadImage(
+    buildRichTextDataUrl({
+      contentHtml: template.contentHtml,
+      pageName,
+      box: PAGE_EDITOR_BOX,
+      defaultFontFamily: template.fontFamily,
+      defaultFontSize: template.fontSize,
+      defaultTextColor: template.textColor,
+      renderScale: EXPORT_RENDER_SCALE,
+    }),
+  );
+  exportCtx.imageSmoothingEnabled = true;
+  exportCtx.imageSmoothingQuality = 'high';
+  exportCtx.drawImage(richTextImage, 0, 0, exportWidth, exportHeight);
+
+  const scaledStampBox = scaleBox(stamp.box, EXPORT_RENDER_SCALE);
+  drawStampBoxBorder(exportCtx, scaledStampBox);
+
+  if (stamp.previewUrl) {
+    const stampImage = await loadImage(stamp.previewUrl);
+    const drawRect = getScaledStampRect(scaledStampBox, stampImage);
+    exportCtx.drawImage(stampImage, drawRect.x, drawRect.y, drawRect.width, drawRect.height);
+  }
+
+  return exportCanvas.toDataURL('image/jpeg', quality);
+}

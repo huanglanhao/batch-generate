@@ -1,0 +1,9 @@
+node_modules
+release
+dist
+.vscode
+.DS_Store
+*.log
+.runtime-data
+.dbg
+.trae
