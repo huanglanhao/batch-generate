@@ -3,7 +3,7 @@ const PAGE_HEIGHT = 1123;
 const DEFAULT_EXPORT_WIDTH = 2480;
 const DEFAULT_EXPORT_HEIGHT = 3508;
 const WINDOWS_PNG_SUPERSAMPLE_SCALE = 2;
-const WINDOWS_JPG_SUPERSAMPLE_SCALE = 1.5;
+const WINDOWS_JPG_SUPERSAMPLE_SCALE = 2;
 
 function normalizeDimension(value, fallback, minValue) {
   return Math.max(minValue, Math.round(Number(value) || fallback));

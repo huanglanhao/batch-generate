@@ -47,15 +47,15 @@ describe('export capture layout', () => {
     expect(layout.tileRows).toBe(7);
   });
 
-  it('keeps the previous lower supersampling level for Windows JPG exports', () => {
+  it('uses the same supersampling level for Windows JPG exports', () => {
     const layout = resolveCaptureLayout(
       { width: 2480, height: 3508, format: 'jpg' },
       'win32',
       { width: 1920, height: 1080 },
     );
 
-    expect(layout.renderWidth).toBe(3720);
-    expect(layout.renderHeight).toBe(5262);
+    expect(layout.renderWidth).toBe(4960);
+    expect(layout.renderHeight).toBe(7016);
     expect(layout.renderScale).toBeCloseTo(WINDOWS_JPG_SUPERSAMPLE_SCALE, 6);
     expect(layout.enhanceTextForCapture).toBe(true);
   });
