@@ -1,12 +1,26 @@
 /* @vitest-environment jsdom */
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import {
   buildBootstrapStamp,
   buildBootstrapTemplate,
+  useAppStore,
 } from './app-store';
 
 describe('app store bootstrap defaults', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    window.alert = vi.fn();
+    window.applicationFormApi = {
+      selectOutputDir: vi.fn(),
+      capturePreviewPage: vi.fn(),
+      writeExportImages: vi.fn(),
+      saveConfig: vi.fn(),
+      pushExportHistory: vi.fn(),
+    };
+  });
+
   it('restores document typography defaults on bootstrap', () => {
     const template = buildBootstrapTemplate({
       title: '自定义申请书',
@@ -59,6 +73,72 @@ describe('app store bootstrap defaults', () => {
       y: 231,
       width: 284,
       height: 284,
+    });
+  });
+
+  it('exports documents through the preview capture pipeline', async () => {
+    const store = useAppStore();
+    store.records = [
+      { rowIndex: 2, name: '张三' },
+      { rowIndex: 3, name: '李四' },
+    ];
+    store.exportSettings = {
+      format: 'png',
+      width: 2480,
+      height: 3508,
+      jpegQuality: 100,
+    };
+
+    window.applicationFormApi.selectOutputDir.mockResolvedValue('/tmp/output');
+    window.applicationFormApi.capturePreviewPage
+      .mockResolvedValueOnce('data:image/png;base64,AAA')
+      .mockResolvedValueOnce('data:image/png;base64,BBB');
+    window.applicationFormApi.writeExportImages.mockResolvedValue({
+      outputDir: '/tmp/output',
+      files: ['/tmp/output/张三.png', '/tmp/output/李四.png'],
+    });
+    window.applicationFormApi.saveConfig.mockResolvedValue({
+      template: store.template,
+      stamp: {
+        imagePath: store.stamp.imagePath,
+        randomizePosition: store.stamp.randomizePosition,
+        randomSeedNonce: store.stamp.randomSeedNonce,
+        box: store.stamp.box,
+      },
+      outputDir: '/tmp/output',
+      exportSettings: store.exportSettings,
+    });
+    window.applicationFormApi.pushExportHistory.mockResolvedValue([]);
+
+    await store.exportDocuments();
+
+    expect(window.applicationFormApi.capturePreviewPage).toHaveBeenCalledTimes(2);
+    expect(window.applicationFormApi.capturePreviewPage).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      pageName: '张三',
+      pageNumber: 1,
+      exportSettings: {
+        format: 'png',
+        width: 2480,
+        height: 3508,
+        jpegQuality: 100,
+      },
+    }));
+    expect(window.applicationFormApi.capturePreviewPage).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      pageName: '李四',
+      pageNumber: 2,
+      exportSettings: {
+        format: 'png',
+        width: 2480,
+        height: 3508,
+        jpegQuality: 100,
+      },
+    }));
+    expect(window.applicationFormApi.writeExportImages).toHaveBeenCalledWith({
+      outputDir: '/tmp/output',
+      items: [
+        { fileName: '张三.png', dataUrl: 'data:image/png;base64,AAA' },
+        { fileName: '李四.png', dataUrl: 'data:image/png;base64,BBB' },
+      ],
     });
   });
 });
