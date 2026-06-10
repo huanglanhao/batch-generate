@@ -11,6 +11,7 @@
     "start": "electron .",
     "vue:build": "vite build --config vite.config.js",
     "build:win": "pnpm vue:build && electron-builder --win nsis",
+    "build:win:patch": "pnpm version patch --no-git-tag-version && pnpm build:win",
     "test": "vitest run",
     "test:watch": "vitest",
     "postinstall": "electron-builder install-app-deps"
