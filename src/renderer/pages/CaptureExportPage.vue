@@ -14,8 +14,11 @@ const currentTileOffset = ref({ x: 0, y: 0 });
 
 const outputWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || PAGE_WIDTH)));
 const outputHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT)));
+const renderWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.renderWidth) || outputWidth.value)));
+const renderHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.renderHeight) || outputHeight.value)));
 const viewportWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.viewportWidth) || outputWidth.value)));
 const viewportHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.viewportHeight) || outputHeight.value)));
+const renderScale = computed(() => Math.max(1, Number(captureSettings.value?.renderScale) || (renderWidth.value / outputWidth.value)));
 const useTiledCapture = computed(() => Boolean(captureSettings.value?.useTiledCapture));
 const tileColumns = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.tileColumns) || 1)));
 const tileRows = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.tileRows) || 1)));
@@ -99,8 +102,8 @@ async function capturePreviewByTiles() {
     for (let column = 0; column < tileColumns.value; column += 1) {
       const tileX = column * viewportWidth.value;
       const tileY = row * viewportHeight.value;
-      const tileWidth = Math.min(viewportWidth.value, outputWidth.value - tileX);
-      const tileHeight = Math.min(viewportHeight.value, outputHeight.value - tileY);
+      const tileWidth = Math.min(viewportWidth.value, renderWidth.value - tileX);
+      const tileHeight = Math.min(viewportHeight.value, renderHeight.value - tileY);
       currentTileOffset.value = { x: tileX, y: tileY };
 
       const tileDataUrl = await captureViewportRegion({
@@ -116,10 +119,10 @@ async function capturePreviewByTiles() {
         0,
         tileWidth,
         tileHeight,
-        tileX,
-        tileY,
-        tileWidth,
-        tileHeight,
+        tileX / renderScale.value,
+        tileY / renderScale.value,
+        tileWidth / renderScale.value,
+        tileHeight / renderScale.value,
       );
     }
   }

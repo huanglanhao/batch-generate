@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import exportCaptureModule from './export-capture';
 
-const { resolveCaptureLayout } = exportCaptureModule;
+const { resolveCaptureLayout, WINDOWS_SUPERSAMPLE_SCALE } = exportCaptureModule;
 
 describe('export capture layout', () => {
   it('keeps the requested output size on non-Windows platforms', () => {
@@ -28,15 +28,18 @@ describe('export capture layout', () => {
 
     expect(layout.outputWidth).toBe(2480);
     expect(layout.outputHeight).toBe(3508);
+    expect(layout.renderWidth).toBe(3720);
+    expect(layout.renderHeight).toBe(5262);
     expect(layout.viewportWidth).toBeLessThanOrEqual(1920);
     expect(layout.viewportHeight).toBeLessThanOrEqual(1080);
     expect(layout.viewportWidth).toBe(1920);
     expect(layout.viewportHeight).toBe(1080);
     expect(layout.fitScale).toBe(1);
-    expect(layout.pageScale).toBeCloseTo(2480 / 794, 6);
+    expect(layout.renderScale).toBeCloseTo(WINDOWS_SUPERSAMPLE_SCALE, 6);
+    expect(layout.pageScale).toBeCloseTo(3720 / 794, 6);
     expect(layout.useOffscreen).toBe(false);
     expect(layout.useTiledCapture).toBe(true);
     expect(layout.tileColumns).toBe(2);
-    expect(layout.tileRows).toBe(4);
+    expect(layout.tileRows).toBe(5);
   });
 });
