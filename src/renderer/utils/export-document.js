@@ -3,7 +3,6 @@ import { getScaledStampRect } from './stamp-layout';
 
 const SHEET_WIDTH = 794;
 const SHEET_HEIGHT = 1123;
-const EXPORT_RENDER_SCALE = 3;
 const PAGE_EDITOR_BOX = {
   x: 0,
   y: 0,
@@ -11,12 +10,12 @@ const PAGE_EDITOR_BOX = {
   height: SHEET_HEIGHT,
 };
 
-function scaleBox(box, scale) {
+function scaleBox(box, scaleX, scaleY = scaleX) {
   return {
-    x: box.x * scale,
-    y: box.y * scale,
-    width: box.width * scale,
-    height: box.height * scale,
+    x: box.x * scaleX,
+    y: box.y * scaleY,
+    width: box.width * scaleX,
+    height: box.height * scaleY,
   };
 }
 
@@ -57,9 +56,33 @@ function drawStampBoxBorder(ctx, box) {
   ctx.restore();
 }
 
-export async function renderDocumentPageToJpegDataUrl({ pageName, pageNumber = 1, template, stamp, quality = 1 }) {
-  const exportWidth = SHEET_WIDTH * EXPORT_RENDER_SCALE;
-  const exportHeight = SHEET_HEIGHT * EXPORT_RENDER_SCALE;
+function normalizeExportFormat(format = 'png') {
+  return String(format || '').trim().toLowerCase() === 'jpg' ? 'jpeg' : 'png';
+}
+
+function normalizeJpegQuality(quality = 100) {
+  const normalized = Math.max(0, Math.min(100, Math.round(Number(quality) || 100)));
+  return normalized / 100;
+}
+
+export async function renderDocumentPageToDataUrl({
+  pageName,
+  pageNumber = 1,
+  template,
+  stamp,
+  format = 'png',
+  width = 2480,
+  height = 3508,
+  jpegQuality = 100,
+}) {
+  const exportWidth = Math.max(SHEET_WIDTH, Math.round(Number(width) || 2480));
+  const exportHeight = Math.max(SHEET_HEIGHT, Math.round(Number(height) || 3508));
+  const scaleX = exportWidth / SHEET_WIDTH;
+  const scaleY = exportHeight / SHEET_HEIGHT;
+  const renderScale = scaleX;
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
   const exportCanvas = document.createElement('canvas');
   exportCanvas.width = exportWidth;
   exportCanvas.height = exportHeight;
@@ -76,14 +99,14 @@ export async function renderDocumentPageToJpegDataUrl({ pageName, pageNumber = 1
       defaultFontFamily: template.fontFamily,
       defaultFontSize: template.fontSize,
       defaultTextColor: template.textColor,
-      renderScale: EXPORT_RENDER_SCALE,
+      renderScale,
     }),
   );
   exportCtx.imageSmoothingEnabled = true;
   exportCtx.imageSmoothingQuality = 'high';
   exportCtx.drawImage(richTextImage, 0, 0, exportWidth, exportHeight);
 
-  const scaledStampBox = scaleBox(stamp.box, EXPORT_RENDER_SCALE);
+  const scaledStampBox = scaleBox(stamp.box, scaleX, scaleY);
   drawStampBoxBorder(exportCtx, scaledStampBox);
 
   if (stamp.previewUrl) {
@@ -95,5 +118,9 @@ export async function renderDocumentPageToJpegDataUrl({ pageName, pageNumber = 1
     exportCtx.drawImage(stampImage, drawRect.x, drawRect.y, drawRect.width, drawRect.height);
   }
 
-  return exportCanvas.toDataURL('image/jpeg', quality);
+  const normalizedFormat = normalizeExportFormat(format);
+  if (normalizedFormat === 'png') {
+    return exportCanvas.toDataURL('image/png');
+  }
+  return exportCanvas.toDataURL('image/jpeg', normalizeJpegQuality(jpegQuality));
 }

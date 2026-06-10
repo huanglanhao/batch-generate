@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { buildUniqueExportFileName } from '../utils/document-template';
+import { renderDocumentPageToDataUrl } from '../utils/export-document';
 import { buildInitialRichTextContent, DEFAULT_RICH_TEXT_CONTENT, EMPTY_RICH_TEXT_CONTENT } from '../utils/rich-text';
 
 let notificationTimer = null;
@@ -331,15 +332,18 @@ export const useAppStore = defineStore('application-form', {
           const record = this.records[index];
           let dataUrl = '';
           try {
-            dataUrl = await window.applicationFormApi.capturePreviewPage({
+            dataUrl = await renderDocumentPageToDataUrl({
               pageName: record.name,
               pageNumber: index + 1,
               template: toSerializableObject(this.template),
               stamp: toSerializableObject(this.stamp),
-              exportSettings,
+              format: exportSettings.format,
+              width: exportSettings.width,
+              height: exportSettings.height,
+              jpegQuality: exportSettings.jpegQuality,
             });
           } catch (error) {
-            throw new Error(`capturePreviewPage: ${error?.message || '未知错误'}`);
+            throw new Error(`renderDocumentPageToDataUrl: ${error?.message || '未知错误'}`);
           }
           items.push({
             fileName: buildUniqueExportFileName(record.name, usedNameMap, exportSettings.format),
