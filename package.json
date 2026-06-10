@@ -1,7 +1,7 @@
 {
   "name": "batch-generate",
   "productName": "批量申请书生成器",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "批量申请书生成器桌面应用",
   "main": "src/main/main.js",
   "scripts": {
