@@ -28,8 +28,11 @@ function loadImage(dataUrl) {
   });
 }
 
-function drawStampBoxBorder(ctx, box) {
-  const borderWidth = 2;
+function drawStampBoxBorder(ctx, box, borderScale = 1) {
+  const normalizedScale = Math.max(1, Number(borderScale) || 1);
+  const borderWidth = 2 * normalizedScale;
+  const dashLength = 16 * normalizedScale;
+  const dashGap = 8 * normalizedScale;
   const left = box.x + borderWidth / 2;
   const top = box.y + borderWidth / 2;
   const right = box.x + box.width - borderWidth / 2;
@@ -46,7 +49,7 @@ function drawStampBoxBorder(ctx, box) {
   ctx.lineTo(right, bottom);
   ctx.stroke();
 
-  ctx.setLineDash([16, 8]);
+  ctx.setLineDash([dashLength, dashGap]);
   ctx.beginPath();
   ctx.moveTo(left, top);
   ctx.lineTo(left, bottom);
@@ -107,7 +110,7 @@ export async function renderDocumentPageToDataUrl({
   exportCtx.drawImage(richTextImage, 0, 0, exportWidth, exportHeight);
 
   const scaledStampBox = scaleBox(stamp.box, scaleX, scaleY);
-  drawStampBoxBorder(exportCtx, scaledStampBox);
+  drawStampBoxBorder(exportCtx, scaledStampBox, Math.min(scaleX, scaleY));
 
   if (stamp.previewUrl) {
     const stampImage = await loadImage(stamp.previewUrl);
