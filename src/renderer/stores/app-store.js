@@ -82,6 +82,7 @@ const DEFAULT_STAMP = {
   imagePath: '',
   previewUrl: '',
   randomizePosition: false,
+  randomSeedNonce: 0,
   box: { ...DEFAULT_STAMP_BOX },
 };
 
@@ -142,6 +143,7 @@ function normalizeLoadedStamp(stamp = {}) {
   return {
     ...DEFAULT_STAMP,
     ...stamp,
+    randomSeedNonce: Math.max(0, Number(stamp.randomSeedNonce) || 0),
     box: isSameBox(stamp.box, LEGACY_STAMP_BOX)
       || isSameBox(stamp.box, PREVIOUS_STAMP_BOX)
       || isSameBox(stamp.box, CURRENT_STAMP_BOX)
@@ -171,6 +173,7 @@ function buildBootstrapStamp(stamp = {}) {
     imagePath: stamp.imagePath || DEFAULT_STAMP.imagePath,
     previewUrl: '',
     randomizePosition: Boolean(stamp.randomizePosition),
+    randomSeedNonce: Math.max(0, Number(stamp.randomSeedNonce) || 0),
     box: { ...DEFAULT_STAMP.box },
   };
 }
@@ -224,6 +227,7 @@ export const useAppStore = defineStore('application-form', {
         stamp: {
           imagePath: this.stamp.imagePath,
           randomizePosition: Boolean(this.stamp.randomizePosition),
+          randomSeedNonce: Math.max(0, Number(this.stamp.randomSeedNonce) || 0),
           box: toSerializableObject(this.stamp.box),
         },
         outputDir: this.outputDir,
@@ -412,6 +416,13 @@ export const useAppStore = defineStore('application-form', {
       };
       this.drawMode = 'none';
       await this.persistConfig();
+    },
+    setStampRandomizePosition(enabled) {
+      const nextEnabled = Boolean(enabled);
+      if (nextEnabled && !this.stamp.randomizePosition) {
+        this.stamp.randomSeedNonce = Math.max(0, Number(this.stamp.randomSeedNonce) || 0) + 1;
+      }
+      this.stamp.randomizePosition = nextEnabled;
     },
     async moveBox(type, box) {
       if (type === 'text-box') {

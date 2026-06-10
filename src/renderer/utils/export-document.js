@@ -90,7 +90,7 @@ export async function renderDocumentPageToJpegDataUrl({ pageName, pageNumber = 1
     const stampImage = await loadImage(stamp.previewUrl);
     const drawRect = getScaledStampRect(scaledStampBox, stampImage, {
       randomizePosition: Boolean(stamp.randomizePosition),
-      seed: `${pageName || 'page'}:${pageNumber}`,
+      seed: `${pageName || 'page'}:${pageNumber}:${stamp.randomSeedNonce || 0}`,
     });
     exportCtx.drawImage(stampImage, drawRect.x, drawRect.y, drawRect.width, drawRect.height);
   }

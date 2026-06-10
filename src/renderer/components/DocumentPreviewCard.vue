@@ -105,7 +105,7 @@ const activeStampBox = computed(() => {
   return props.stamp.box;
 });
 const stampBoxStyle = computed(() => toBoxStyle(activeStampBox.value));
-const stampPlacementSeed = computed(() => `${props.pageName || 'page'}:${props.pageNumber || 1}`);
+const stampPlacementSeed = computed(() => `${props.pageName || 'page'}:${props.pageNumber || 1}:${props.stamp.randomSeedNonce || 0}`);
 const stampImageStyle = computed(() => {
   const box = activeStampBox.value;
   if (!box) return {};

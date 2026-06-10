@@ -3,6 +3,10 @@ import DocumentPreviewCard from '../components/DocumentPreviewCard.vue';
 import { useAppStore } from '../stores/app-store';
 
 const appStore = useAppStore();
+
+function handleRandomizePositionChange(event) {
+  appStore.setStampRandomizePosition(event.target.checked);
+}
 </script>
 
 <template>
@@ -56,7 +60,11 @@ const appStore = useAppStore();
       </div>
 
       <label class="field-checkbox">
-        <input v-model="appStore.stamp.randomizePosition" type="checkbox" />
+        <input
+          :checked="appStore.stamp.randomizePosition"
+          type="checkbox"
+          @change="handleRandomizePositionChange"
+        />
         <span>盖章在框内随机位置显示，取消勾选则居中显示</span>
       </label>
 

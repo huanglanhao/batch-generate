@@ -1,4 +1,5 @@
 export const STAMP_IMAGE_SCALE = 0.72;
+export const STAMP_RANDOM_MIN_EDGE_GAP = 8;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -33,6 +34,18 @@ function pickOffsetRatio(seed, maxOffset) {
   return 1 - (((1 - randomValue) / 0.5) * edgeBandRatio);
 }
 
+function getRandomOffset(seed, maxOffset) {
+  if (maxOffset <= 0) return 0;
+
+  const minEdgeGap = Math.min(STAMP_RANDOM_MIN_EDGE_GAP, maxOffset / 2);
+  const availableOffset = maxOffset - (minEdgeGap * 2);
+  if (availableOffset <= 0) {
+    return maxOffset / 2;
+  }
+
+  return minEdgeGap + (availableOffset * pickOffsetRatio(seed, availableOffset));
+}
+
 export function getScaledStampRect(box, imageSize = {}, options = {}) {
   const safeBox = {
     x: Number(box?.x) || 0,
@@ -61,10 +74,10 @@ export function getScaledStampRect(box, imageSize = {}, options = {}) {
   const randomizePosition = Boolean(options.randomizePosition);
   const seed = String(options.seed || '');
   const offsetX = randomizePosition
-    ? maxOffsetX * pickOffsetRatio(`${seed}:x`, maxOffsetX)
+    ? getRandomOffset(`${seed}:x`, maxOffsetX)
     : maxOffsetX / 2;
   const offsetY = randomizePosition
-    ? maxOffsetY * pickOffsetRatio(`${seed}:y`, maxOffsetY)
+    ? getRandomOffset(`${seed}:y`, maxOffsetY)
     : maxOffsetY / 2;
 
   return {
