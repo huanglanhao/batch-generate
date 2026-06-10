@@ -36,7 +36,7 @@ function resolveCaptureLayout(exportSettings = {}, platform = process.platform, 
       useTiledCapture: renderWidth > viewportWidth || renderHeight > viewportHeight,
       tileColumns: Math.max(1, Math.ceil(renderWidth / viewportWidth)),
       tileRows: Math.max(1, Math.ceil(renderHeight / viewportHeight)),
-      enhanceTextForCapture: normalizedFormat === 'png',
+      enhanceTextForCapture: normalizedFormat === 'png' || normalizedFormat === 'jpg' || normalizedFormat === 'jpeg',
     };
   }
 

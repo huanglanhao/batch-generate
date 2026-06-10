@@ -57,5 +57,6 @@ describe('export capture layout', () => {
     expect(layout.renderWidth).toBe(3720);
     expect(layout.renderHeight).toBe(5262);
     expect(layout.renderScale).toBeCloseTo(WINDOWS_JPG_SUPERSAMPLE_SCALE, 6);
+    expect(layout.enhanceTextForCapture).toBe(true);
   });
 });
