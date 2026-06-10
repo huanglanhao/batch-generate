@@ -63,6 +63,46 @@ function normalizeJpegQuality(quality = 100) {
   return normalized / 100;
 }
 
+function enhanceCanvasInk(canvas) {
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const { data } = imageData;
+
+  for (let index = 0; index < data.length; index += 4) {
+    const red = data[index];
+    const green = data[index + 1];
+    const blue = data[index + 2];
+    const alpha = data[index + 3];
+    if (alpha === 0) continue;
+
+    const maxChannel = Math.max(red, green, blue);
+    const minChannel = Math.min(red, green, blue);
+    const isNearGray = maxChannel - minChannel <= 18;
+    if (!isNearGray) continue;
+
+    const luminance = (red * 0.299) + (green * 0.587) + (blue * 0.114);
+    if (luminance > 215) continue;
+
+    const boost = luminance < 140 ? 0.68 : 0.78;
+    data[index] = Math.max(0, Math.round(red * boost));
+    data[index + 1] = Math.max(0, Math.round(green * boost));
+    data[index + 2] = Math.max(0, Math.round(blue * boost));
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function canvasToDataUrl(canvas, format, quality) {
+  if (enhanceTextForCapture.value) {
+    enhanceCanvasInk(canvas);
+  }
+  if (format === 'png') {
+    return canvas.toDataURL('image/png');
+  }
+  return canvas.toDataURL('image/jpeg', normalizeJpegQuality(quality));
+}
+
 function loadImage(dataUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -147,10 +187,28 @@ async function capturePreviewByTiles() {
 
   currentTileOffset.value = { x: 0, y: 0 };
   const exportFormat = String(payload.value?.exportSettings?.format || 'png').trim().toLowerCase();
-  if (exportFormat === 'png') {
-    return canvas.toDataURL('image/png');
+  return canvasToDataUrl(canvas, exportFormat, payload.value?.exportSettings?.jpegQuality || 100);
+}
+
+async function captureSinglePreview() {
+  const dataUrl = await captureViewportRegion({
+    format: payload.value?.exportSettings?.format || 'png',
+    quality: payload.value?.exportSettings?.jpegQuality || 100,
+    targetWidth: outputWidth.value,
+    targetHeight: outputHeight.value,
+  });
+  if (!enhanceTextForCapture.value) {
+    return dataUrl;
   }
-  return canvas.toDataURL('image/jpeg', normalizeJpegQuality(payload.value?.exportSettings?.jpegQuality || 100));
+
+  const exportFormat = String(payload.value?.exportSettings?.format || 'png').trim().toLowerCase();
+  const image = await loadImage(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = outputWidth.value;
+  canvas.height = outputHeight.value;
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, outputWidth.value, outputHeight.value);
+  return canvasToDataUrl(canvas, exportFormat, payload.value?.exportSettings?.jpegQuality || 100);
 }
 
 async function capturePreview() {
@@ -176,12 +234,7 @@ async function capturePreview() {
       if (useTiledCapture.value) {
         dataUrl = await capturePreviewByTiles();
       } else {
-        dataUrl = await captureViewportRegion({
-          format: payload.value?.exportSettings?.format || 'png',
-          quality: payload.value?.exportSettings?.jpegQuality || 100,
-          targetWidth: outputWidth.value,
-          targetHeight: outputHeight.value,
-        });
+        dataUrl = await captureSinglePreview();
       }
     } catch (error) {
       throw new Error(`captureCurrentWindowRegion: ${error?.message || '未知错误'}`);
