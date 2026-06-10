@@ -8,15 +8,19 @@ const previewCardRef = ref(null);
 const payload = ref(null);
 const PAGE_WIDTH = 794;
 const PAGE_HEIGHT = 1123;
+const captureSettings = computed(() => payload.value?.captureSettings || null);
 
 const exportScale = computed(() => {
+  if (captureSettings.value?.pageScale) {
+    return Math.max(0.01, Number(captureSettings.value.pageScale) || 1);
+  }
   const width = Math.max(PAGE_WIDTH, Math.round(Number(payload.value?.exportSettings?.width) || PAGE_WIDTH));
   return width / PAGE_WIDTH;
 });
 
 const captureRootStyle = computed(() => ({
-  width: `${Math.max(PAGE_WIDTH, Math.round(Number(payload.value?.exportSettings?.width) || PAGE_WIDTH))}px`,
-  height: `${Math.max(PAGE_HEIGHT, Math.round(Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT))}px`,
+  width: `${Math.max(1, Math.round(Number(captureSettings.value?.viewportWidth) || Number(payload.value?.exportSettings?.width) || PAGE_WIDTH))}px`,
+  height: `${Math.max(1, Math.round(Number(captureSettings.value?.viewportHeight) || Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT))}px`,
 }));
 
 async function capturePreview() {
@@ -52,6 +56,8 @@ async function capturePreview() {
         rect,
         format: payload.value?.exportSettings?.format || 'png',
         quality: payload.value?.exportSettings?.jpegQuality || 100,
+        targetWidth: Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || rect.width)),
+        targetHeight: Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || rect.height)),
       });
     } catch (error) {
       throw new Error(`captureCurrentWindowRegion: ${error?.message || '未知错误'}`);

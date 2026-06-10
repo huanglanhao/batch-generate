@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeImage, screen, shell } = require('electron');
 const XLSX = require('xlsx');
 
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
@@ -20,6 +20,7 @@ if (isDevelopment) {
 }
 
 const { getConfig, saveConfig, pushExportHistory } = require('./store');
+const { resolveCaptureLayout } = require('./export-capture');
 const exportCaptureSessions = new Map();
 
 function normalizeName(value) {
@@ -172,12 +173,15 @@ async function loadRendererRoute(window, routePath) {
 }
 
 async function createExportCaptureWindow(token, payload = {}) {
-  const exportWidth = Math.max(794, Math.round(Number(payload.exportSettings?.width) || 794));
-  const exportHeight = Math.max(1123, Math.round(Number(payload.exportSettings?.height) || 1123));
+  const captureSettings = payload.captureSettings || resolveCaptureLayout(
+    payload.exportSettings,
+    process.platform,
+    screen.getPrimaryDisplay()?.workAreaSize,
+  );
   const window = new BrowserWindow({
     show: false,
-    width: exportWidth,
-    height: exportHeight,
+    width: captureSettings.viewportWidth,
+    height: captureSettings.viewportHeight,
     icon: resolveAppIconPath(),
     useContentSize: true,
     resizable: false,
@@ -241,6 +245,15 @@ app.whenReady().then(async () => {
   ipcMain.handle('exports:write-images', async (_, payload) => writeExportImages(payload));
   ipcMain.handle('exports:capture-preview-page', async (_, payload) => {
     const token = randomUUID();
+    const captureSettings = resolveCaptureLayout(
+      payload?.exportSettings,
+      process.platform,
+      screen.getPrimaryDisplay()?.workAreaSize,
+    );
+    const capturePayload = {
+      ...payload,
+      captureSettings,
+    };
     return new Promise(async (resolve, reject) => {
       const timeout = setTimeout(() => {
         const session = exportCaptureSessions.get(token);
@@ -251,7 +264,7 @@ app.whenReady().then(async () => {
 
       try {
         exportCaptureSessions.set(token, {
-          payload,
+          payload: capturePayload,
           resolve: (dataUrl) => {
             clearTimeout(timeout);
             resolve(dataUrl);
@@ -263,7 +276,7 @@ app.whenReady().then(async () => {
           window: null,
         });
 
-        const captureWindow = await createExportCaptureWindow(token, payload);
+        const captureWindow = await createExportCaptureWindow(token, capturePayload);
         const session = exportCaptureSessions.get(token);
         if (!session) {
           captureWindow.destroy();
@@ -310,9 +323,23 @@ app.whenReady().then(async () => {
     const y = Math.max(0, Math.round(Number(rect.y) || 0));
     const width = Math.max(1, Math.round(Number(rect.width) || 0));
     const height = Math.max(1, Math.round(Number(rect.height) || 0));
+    const targetWidth = Math.max(1, Math.round(Number(payload.targetWidth) || 0));
+    const targetHeight = Math.max(1, Math.round(Number(payload.targetHeight) || 0));
     const quality = Math.max(0, Math.min(100, Math.round(Number(payload.quality) || 100)));
     const format = normalizeExportFormat(payload.format);
-    const image = await event.sender.capturePage({ x, y, width, height });
+    let image = await event.sender.capturePage({ x, y, width, height });
+    if (targetWidth > 0 && targetHeight > 0) {
+      const currentSize = image.getSize();
+      if (currentSize.width !== targetWidth || currentSize.height !== targetHeight) {
+        image = nativeImage.createFromBuffer(
+          image.resize({
+            width: targetWidth,
+            height: targetHeight,
+            quality: 'best',
+          }).toPNG(),
+        );
+      }
+    }
     if (format === 'png') {
       return `data:image/png;base64,${image.toPNG().toString('base64')}`;
     }
