@@ -5,10 +5,20 @@ import DocumentPreviewCard from '../components/DocumentPreviewCard.vue';
 
 const route = useRoute();
 const previewCardRef = ref(null);
+const captureViewportRef = ref(null);
 const payload = ref(null);
 const PAGE_WIDTH = 794;
 const PAGE_HEIGHT = 1123;
 const captureSettings = computed(() => payload.value?.captureSettings || null);
+const currentTileOffset = ref({ x: 0, y: 0 });
+
+const outputWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || PAGE_WIDTH)));
+const outputHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT)));
+const viewportWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.viewportWidth) || outputWidth.value)));
+const viewportHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.viewportHeight) || outputHeight.value)));
+const useTiledCapture = computed(() => Boolean(captureSettings.value?.useTiledCapture));
+const tileColumns = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.tileColumns) || 1)));
+const tileRows = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.tileRows) || 1)));
 
 const exportScale = computed(() => {
   if (captureSettings.value?.pageScale) {
@@ -19,9 +29,108 @@ const exportScale = computed(() => {
 });
 
 const captureRootStyle = computed(() => ({
-  width: `${Math.max(1, Math.round(Number(captureSettings.value?.viewportWidth) || Number(payload.value?.exportSettings?.width) || PAGE_WIDTH))}px`,
-  height: `${Math.max(1, Math.round(Number(captureSettings.value?.viewportHeight) || Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT))}px`,
+  width: `${viewportWidth.value}px`,
+  height: `${viewportHeight.value}px`,
 }));
+
+const captureStageStyle = computed(() => ({
+  transform: `translate(${-currentTileOffset.value.x}px, ${-currentTileOffset.value.y}px)`,
+}));
+
+function normalizeJpegQuality(quality = 100) {
+  const normalized = Math.max(0, Math.min(100, Math.round(Number(quality) || 100)));
+  return normalized / 100;
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+function getCaptureViewportBounds() {
+  const rect = captureViewportRef.value?.getBoundingClientRect();
+  if (!rect) return null;
+  return {
+    x: Math.round(rect.left + window.scrollX),
+    y: Math.round(rect.top + window.scrollY),
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+  };
+}
+
+async function waitForCaptureReady() {
+  await nextTick();
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+  await previewCardRef.value?.waitForCaptureReady?.();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+async function captureViewportRegion({ format, quality, targetWidth, targetHeight }) {
+  await waitForCaptureReady();
+  const rect = getCaptureViewportBounds();
+  if (!rect) {
+    throw new Error('未找到导出预览区域');
+  }
+  return window.applicationFormApi.captureCurrentWindowRegion({
+    rect,
+    format,
+    quality,
+    targetWidth,
+    targetHeight,
+  });
+}
+
+async function capturePreviewByTiles() {
+  const canvas = document.createElement('canvas');
+  canvas.width = outputWidth.value;
+  canvas.height = outputHeight.value;
+
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let row = 0; row < tileRows.value; row += 1) {
+    for (let column = 0; column < tileColumns.value; column += 1) {
+      const tileX = column * viewportWidth.value;
+      const tileY = row * viewportHeight.value;
+      const tileWidth = Math.min(viewportWidth.value, outputWidth.value - tileX);
+      const tileHeight = Math.min(viewportHeight.value, outputHeight.value - tileY);
+      currentTileOffset.value = { x: tileX, y: tileY };
+
+      const tileDataUrl = await captureViewportRegion({
+        format: 'png',
+        quality: 100,
+        targetWidth: viewportWidth.value,
+        targetHeight: viewportHeight.value,
+      });
+      const tileImage = await loadImage(tileDataUrl);
+      context.drawImage(
+        tileImage,
+        0,
+        0,
+        tileWidth,
+        tileHeight,
+        tileX,
+        tileY,
+        tileWidth,
+        tileHeight,
+      );
+    }
+  }
+
+  currentTileOffset.value = { x: 0, y: 0 };
+  const exportFormat = String(payload.value?.exportSettings?.format || 'png').trim().toLowerCase();
+  if (exportFormat === 'png') {
+    return canvas.toDataURL('image/png');
+  }
+  return canvas.toDataURL('image/jpeg', normalizeJpegQuality(payload.value?.exportSettings?.jpegQuality || 100));
+}
 
 async function capturePreview() {
   const token = String(route.query.token || '');
@@ -40,25 +149,19 @@ async function capturePreview() {
       throw new Error('未找到导出数据');
     }
 
-    await nextTick();
-    if (document.fonts?.ready) {
-      await document.fonts.ready;
-    }
-    await previewCardRef.value?.waitForCaptureReady?.();
-    const rect = previewCardRef.value?.getPageSurfaceBounds?.();
-    if (!rect) {
-      throw new Error('未找到导出预览区域');
-    }
-
     let dataUrl = '';
     try {
-      dataUrl = await window.applicationFormApi.captureCurrentWindowRegion({
-        rect,
-        format: payload.value?.exportSettings?.format || 'png',
-        quality: payload.value?.exportSettings?.jpegQuality || 100,
-        targetWidth: Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || rect.width)),
-        targetHeight: Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || rect.height)),
-      });
+      currentTileOffset.value = { x: 0, y: 0 };
+      if (useTiledCapture.value) {
+        dataUrl = await capturePreviewByTiles();
+      } else {
+        dataUrl = await captureViewportRegion({
+          format: payload.value?.exportSettings?.format || 'png',
+          quality: payload.value?.exportSettings?.jpegQuality || 100,
+          targetWidth: outputWidth.value,
+          targetHeight: outputHeight.value,
+        });
+      }
     } catch (error) {
       throw new Error(`captureCurrentWindowRegion: ${error?.message || '未知错误'}`);
     }
@@ -90,16 +193,20 @@ onMounted(async () => {
 
 <template>
   <section class="capture-export-root" :style="captureRootStyle">
-    <DocumentPreviewCard
-      v-if="payload"
-      ref="previewCardRef"
-      :page-name="payload.pageName"
-      :page-number="payload.pageNumber || 1"
-      :template="payload.template"
-      :stamp="payload.stamp"
-      :scale="exportScale"
-      :capture-mode="true"
-    />
+    <div ref="captureViewportRef" class="capture-export-viewport">
+      <div class="capture-export-stage" :style="captureStageStyle">
+        <DocumentPreviewCard
+          v-if="payload"
+          ref="previewCardRef"
+          :page-name="payload.pageName"
+          :page-number="payload.pageNumber || 1"
+          :template="payload.template"
+          :stamp="payload.stamp"
+          :scale="exportScale"
+          :capture-mode="true"
+        />
+      </div>
+    </div>
   </section>
 </template>
 
@@ -108,7 +215,18 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
+  background: #ffffff;
+}
+
+.capture-export-viewport {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: #ffffff;
+}
+
+.capture-export-stage {
+  width: fit-content;
+  height: fit-content;
 }
 </style>

@@ -19,7 +19,7 @@ describe('export capture layout', () => {
     expect(layout.useOffscreen).toBe(false);
   });
 
-  it('fits the capture viewport into the Windows work area while preserving the final output size', () => {
+  it('uses tiled capture on Windows while preserving the final output size', () => {
     const layout = resolveCaptureLayout(
       { width: 2480, height: 3508 },
       'win32',
@@ -30,10 +30,13 @@ describe('export capture layout', () => {
     expect(layout.outputHeight).toBe(3508);
     expect(layout.viewportWidth).toBeLessThanOrEqual(1920);
     expect(layout.viewportHeight).toBeLessThanOrEqual(1080);
-    expect(layout.viewportWidth).toBe(764);
+    expect(layout.viewportWidth).toBe(1920);
     expect(layout.viewportHeight).toBe(1080);
-    expect(layout.fitScale).toBeCloseTo(1080 / 3508, 6);
-    expect(layout.pageScale).toBeCloseTo((2480 / 794) * layout.fitScale, 6);
+    expect(layout.fitScale).toBe(1);
+    expect(layout.pageScale).toBeCloseTo(2480 / 794, 6);
     expect(layout.useOffscreen).toBe(false);
+    expect(layout.useTiledCapture).toBe(true);
+    expect(layout.tileColumns).toBe(2);
+    expect(layout.tileRows).toBe(4);
   });
 });
