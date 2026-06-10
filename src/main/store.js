@@ -19,6 +19,7 @@ const DEFAULT_CONFIG = {
   },
   stamp: {
     imagePath: '',
+    randomizePosition: false,
     box: {
       x: 379,
       y: 269,
@@ -77,6 +78,7 @@ function saveConfig(payload = {}) {
     },
     stamp: {
       imagePath: payload.stamp?.imagePath ?? current.stamp.imagePath,
+      randomizePosition: payload.stamp?.randomizePosition ?? current.stamp.randomizePosition,
       box: {
         ...current.stamp.box,
         ...((payload.stamp || {}).box || {}),

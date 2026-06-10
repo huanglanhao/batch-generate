@@ -1,8 +1,8 @@
 import { buildRichTextDataUrl } from './rich-text';
+import { getScaledStampRect } from './stamp-layout';
 
 const SHEET_WIDTH = 794;
 const SHEET_HEIGHT = 1123;
-const STAMP_IMAGE_SCALE = 0.72;
 const EXPORT_RENDER_SCALE = 3;
 const PAGE_EDITOR_BOX = {
   x: 0,
@@ -27,29 +27,6 @@ function loadImage(dataUrl) {
     image.onerror = reject;
     image.src = dataUrl;
   });
-}
-
-function getScaledStampRect(box, image) {
-  const targetWidth = box.width * STAMP_IMAGE_SCALE;
-  const targetHeight = box.height * STAMP_IMAGE_SCALE;
-  const imageRatio = image.width / image.height;
-  const targetRatio = targetWidth / targetHeight;
-
-  let drawWidth = targetWidth;
-  let drawHeight = targetHeight;
-
-  if (imageRatio > targetRatio) {
-    drawHeight = targetWidth / imageRatio;
-  } else {
-    drawWidth = targetHeight * imageRatio;
-  }
-
-  return {
-    x: box.x + (box.width - drawWidth) / 2,
-    y: box.y + (box.height - drawHeight) / 2,
-    width: drawWidth,
-    height: drawHeight,
-  };
 }
 
 function drawStampBoxBorder(ctx, box) {
@@ -80,7 +57,7 @@ function drawStampBoxBorder(ctx, box) {
   ctx.restore();
 }
 
-export async function renderDocumentPageToJpegDataUrl({ pageName, template, stamp, quality = 1 }) {
+export async function renderDocumentPageToJpegDataUrl({ pageName, pageNumber = 1, template, stamp, quality = 1 }) {
   const exportWidth = SHEET_WIDTH * EXPORT_RENDER_SCALE;
   const exportHeight = SHEET_HEIGHT * EXPORT_RENDER_SCALE;
   const exportCanvas = document.createElement('canvas');
@@ -111,7 +88,10 @@ export async function renderDocumentPageToJpegDataUrl({ pageName, template, stam
 
   if (stamp.previewUrl) {
     const stampImage = await loadImage(stamp.previewUrl);
-    const drawRect = getScaledStampRect(scaledStampBox, stampImage);
+    const drawRect = getScaledStampRect(scaledStampBox, stampImage, {
+      randomizePosition: Boolean(stamp.randomizePosition),
+      seed: `${pageName || 'page'}:${pageNumber}`,
+    });
     exportCtx.drawImage(stampImage, drawRect.x, drawRect.y, drawRect.width, drawRect.height);
   }
 

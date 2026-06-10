@@ -81,6 +81,7 @@ const OLD_DEFAULT_STAMP_BOX = {
 const DEFAULT_STAMP = {
   imagePath: '',
   previewUrl: '',
+  randomizePosition: false,
   box: { ...DEFAULT_STAMP_BOX },
 };
 
@@ -169,6 +170,7 @@ function buildBootstrapStamp(stamp = {}) {
     ...DEFAULT_STAMP,
     imagePath: stamp.imagePath || DEFAULT_STAMP.imagePath,
     previewUrl: '',
+    randomizePosition: Boolean(stamp.randomizePosition),
     box: { ...DEFAULT_STAMP.box },
   };
 }
@@ -221,6 +223,7 @@ export const useAppStore = defineStore('application-form', {
         template: toSerializableObject(this.template),
         stamp: {
           imagePath: this.stamp.imagePath,
+          randomizePosition: Boolean(this.stamp.randomizePosition),
           box: toSerializableObject(this.stamp.box),
         },
         outputDir: this.outputDir,
@@ -265,6 +268,12 @@ export const useAppStore = defineStore('application-form', {
       this.stamp.previewUrl = (await window.applicationFormApi.readImageAsDataUrl(filePath)) || '';
       await this.persistConfig();
     },
+    async clearStampFile() {
+      if (!this.stamp.imagePath && !this.stamp.previewUrl) return;
+      this.stamp.imagePath = '';
+      this.stamp.previewUrl = '';
+      await this.persistConfig();
+    },
     async selectOutputDir() {
       const outputDir = await window.applicationFormApi.selectOutputDir();
       if (!outputDir) return;
@@ -299,6 +308,7 @@ export const useAppStore = defineStore('application-form', {
           try {
             dataUrl = await window.applicationFormApi.capturePreviewPage({
               pageName: record.name,
+              pageNumber: index + 1,
               template: toSerializableObject(this.template),
               stamp: toSerializableObject(this.stamp),
             });

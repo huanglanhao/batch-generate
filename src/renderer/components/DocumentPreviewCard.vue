@@ -6,10 +6,10 @@ import {
   decorateEditorTokens,
   renderRichTextTemplate,
 } from '../utils/rich-text';
+import { getScaledStampRect } from '../utils/stamp-layout';
 
 const SHEET_WIDTH = 794;
 const SHEET_HEIGHT = 1123;
-const STAMP_IMAGE_SCALE = 0.72;
 const SHEET_WIDTH_CM = 21;
 const SHEET_HEIGHT_CM = 29.7;
 const RULER_GUTTER = 34;
@@ -69,6 +69,7 @@ const stampBoxSelected = ref(false);
 const editorRef = ref(null);
 const savedSelectionRange = ref(null);
 const editorFocused = ref(false);
+const stampImageNaturalSize = ref({ width: 0, height: 0 });
 const rulerVisible = computed(() => props.showRulers && props.scale >= 0.4);
 const stampResizeHandles = [
   { direction: 'nw', cursor: 'nwse-resize' },
@@ -104,14 +105,19 @@ const activeStampBox = computed(() => {
   return props.stamp.box;
 });
 const stampBoxStyle = computed(() => toBoxStyle(activeStampBox.value));
+const stampPlacementSeed = computed(() => `${props.pageName || 'page'}:${props.pageNumber || 1}`);
 const stampImageStyle = computed(() => {
   const box = activeStampBox.value;
   if (!box) return {};
-  const width = box.width * STAMP_IMAGE_SCALE;
-  const height = box.height * STAMP_IMAGE_SCALE;
+  const drawRect = getScaledStampRect(box, stampImageNaturalSize.value, {
+    randomizePosition: Boolean(props.stamp.randomizePosition),
+    seed: stampPlacementSeed.value,
+  });
   return {
-    width: `${width}px`,
-    height: `${height}px`,
+    left: `${drawRect.x - box.x}px`,
+    top: `${drawRect.y - box.y}px`,
+    width: `${drawRect.width}px`,
+    height: `${drawRect.height}px`,
   };
 });
 const draftBoxStyle = computed(() => toBoxStyle(draftBox.value));
@@ -170,6 +176,14 @@ function handlePointerDown(event) {
   if (!point) return;
   startPoint.value = point;
   draftBox.value = { x: point.x, y: point.y, width: 0, height: 0 };
+}
+
+function handleStampImageLoad(event) {
+  const image = event.target;
+  stampImageNaturalSize.value = {
+    width: Number(image?.naturalWidth) || 0,
+    height: Number(image?.naturalHeight) || 0,
+  };
 }
 
 function handlePointerMove(event) {
@@ -1071,6 +1085,13 @@ watch(
     refreshEditorTokens();
   },
 );
+
+watch(
+  () => props.stamp.previewUrl,
+  () => {
+    stampImageNaturalSize.value = { width: 0, height: 0 };
+  },
+);
 </script>
 
 <template>
@@ -1145,6 +1166,7 @@ watch(
             :src="stamp.previewUrl"
             :style="stampImageStyle"
             alt="企业公章"
+            @load="handleStampImageLoad"
           />
           <span v-else class="document-stamp-placeholder">
             {{ stamp.imagePath ? '盖章加载失败' : '请导入盖章' }}

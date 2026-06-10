@@ -40,6 +40,7 @@ describe('app store bootstrap defaults', () => {
   it('restores default stamp box while keeping the selected stamp image', () => {
     const stamp = buildBootstrapStamp({
       imagePath: '/tmp/company-stamp.png',
+      randomizePosition: true,
       box: {
         x: 1,
         y: 2,
@@ -50,6 +51,7 @@ describe('app store bootstrap defaults', () => {
 
     expect(stamp.imagePath).toBe('/tmp/company-stamp.png');
     expect(stamp.previewUrl).toBe('');
+    expect(stamp.randomizePosition).toBe(true);
     expect(stamp.box).toEqual({
       x: 379,
       y: 231,
