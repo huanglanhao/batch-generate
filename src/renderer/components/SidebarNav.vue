@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import appLogo from '../assets/logo/logo.png';
+import { useAppStore } from '../stores/app-store';
 
 const props = defineProps({
   collapsed: {
@@ -11,6 +12,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggle']);
+const appStore = useAppStore();
 const route = useRoute();
 const items = [
   { to: '/workspace', label: '工作台', desc: '导表与模板' },
@@ -20,6 +22,10 @@ const items = [
 
 const activePath = computed(() => route.path);
 const toggleLabel = computed(() => (props.collapsed ? '展开左侧目录' : '收起左侧目录'));
+const versionLabel = computed(() => {
+  const version = String(appStore.meta?.version || '').trim();
+  return version ? `v${version}` : '';
+});
 </script>
 
 <template>
@@ -81,5 +87,10 @@ const toggleLabel = computed(() => (props.collapsed ? '展开左侧目录' : '�
         </span>
       </RouterLink>
     </nav>
+
+    <footer v-if="versionLabel" class="sidebar-version" :class="{ 'is-collapsed': collapsed }">
+      <span v-if="!collapsed" class="sidebar-version-label">当前版本</span>
+      <strong>{{ versionLabel }}</strong>
+    </footer>
   </aside>
 </template>
