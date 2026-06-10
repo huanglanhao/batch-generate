@@ -17,7 +17,7 @@ const appStore = useAppStore();
     <div class="record-table" v-if="appStore.exportHistory.length">
       <div class="record-row record-head">
         <span>时间</span>
-        <span>人数</span>
+        <span>页数</span>
         <span>目录</span>
         <span>状态</span>
         <span>操作</span>
