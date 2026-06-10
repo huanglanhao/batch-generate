@@ -11,6 +11,7 @@ const PAGE_WIDTH = 794;
 const PAGE_HEIGHT = 1123;
 const captureSettings = computed(() => payload.value?.captureSettings || null);
 const currentTileOffset = ref({ x: 0, y: 0 });
+const enhanceTextForCapture = computed(() => Boolean(captureSettings.value?.enhanceTextForCapture));
 
 const outputWidth = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || PAGE_WIDTH)));
 const outputHeight = computed(() => Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT)));
@@ -39,6 +40,34 @@ const captureRootStyle = computed(() => ({
 const captureStageStyle = computed(() => ({
   transform: `translate(${-currentTileOffset.value.x}px, ${-currentTileOffset.value.y}px)`,
 }));
+
+function clampColorChannel(value) {
+  return Math.max(0, Math.min(255, Math.round(Number(value) || 0)));
+}
+
+function channelToHex(value) {
+  return clampColorChannel(value).toString(16).padStart(2, '0');
+}
+
+function darkenHexColor(value, factor = 0.82) {
+  const normalized = String(value || '').trim();
+  const matched = normalized.match(/^#([0-9a-f]{6})$/i);
+  if (!matched) return normalized;
+  const hex = matched[1];
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  return `#${channelToHex(red * factor)}${channelToHex(green * factor)}${channelToHex(blue * factor)}`;
+}
+
+const captureTemplate = computed(() => {
+  if (!payload.value?.template) return null;
+  if (!enhanceTextForCapture.value) return payload.value.template;
+  return {
+    ...payload.value.template,
+    textColor: darkenHexColor(payload.value.template.textColor, 0.82),
+  };
+});
 
 function normalizeJpegQuality(quality = 100) {
   const normalized = Math.max(0, Math.min(100, Math.round(Number(quality) || 100)));
@@ -195,7 +224,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="capture-export-root" :style="captureRootStyle">
+  <section class="capture-export-root" :class="{ 'is-windows-text-enhanced': enhanceTextForCapture }" :style="captureRootStyle">
     <div ref="captureViewportRef" class="capture-export-viewport">
       <div class="capture-export-stage" :style="captureStageStyle">
         <DocumentPreviewCard
@@ -203,7 +232,7 @@ onMounted(async () => {
           ref="previewCardRef"
           :page-name="payload.pageName"
           :page-number="payload.pageNumber || 1"
-          :template="payload.template"
+          :template="captureTemplate || payload.template"
           :stamp="payload.stamp"
           :scale="exportScale"
           :capture-mode="true"
@@ -231,5 +260,15 @@ onMounted(async () => {
 .capture-export-stage {
   width: fit-content;
   height: fit-content;
+}
+
+.capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content) {
+  font-weight: 500;
+  text-rendering: geometricPrecision;
+}
+
+.capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content strong),
+.capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content b) {
+  font-weight: 700;
 }
 </style>
