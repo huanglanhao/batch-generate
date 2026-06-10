@@ -41,23 +41,12 @@ const captureStageStyle = computed(() => ({
   transform: `translate(${-currentTileOffset.value.x}px, ${-currentTileOffset.value.y}px)`,
 }));
 
-function clampColorChannel(value) {
-  return Math.max(0, Math.min(255, Math.round(Number(value) || 0)));
-}
-
-function channelToHex(value) {
-  return clampColorChannel(value).toString(16).padStart(2, '0');
-}
-
-function darkenHexColor(value, factor = 0.82) {
+function strengthenCaptureTextColor(value) {
   const normalized = String(value || '').trim();
-  const matched = normalized.match(/^#([0-9a-f]{6})$/i);
-  if (!matched) return normalized;
-  const hex = matched[1];
-  const red = Number.parseInt(hex.slice(0, 2), 16);
-  const green = Number.parseInt(hex.slice(2, 4), 16);
-  const blue = Number.parseInt(hex.slice(4, 6), 16);
-  return `#${channelToHex(red * factor)}${channelToHex(green * factor)}${channelToHex(blue * factor)}`;
+  if (/^#([0-9a-f]{6})$/i.test(normalized)) {
+    return '#000000';
+  }
+  return normalized;
 }
 
 const captureTemplate = computed(() => {
@@ -65,7 +54,7 @@ const captureTemplate = computed(() => {
   if (!enhanceTextForCapture.value) return payload.value.template;
   return {
     ...payload.value.template,
-    textColor: darkenHexColor(payload.value.template.textColor, 0.82),
+    textColor: strengthenCaptureTextColor(payload.value.template.textColor),
   };
 });
 
@@ -265,6 +254,14 @@ onMounted(async () => {
 .capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content) {
   font-weight: 500;
   text-rendering: geometricPrecision;
+  color: #000000 !important;
+}
+
+.capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content div),
+.capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content span) {
+  color: #000000 !important;
+  text-shadow: 0 0 0.15px currentColor;
+  -webkit-text-stroke: 0.15px currentColor;
 }
 
 .capture-export-root.is-windows-text-enhanced :deep(.document-page-editor-content strong),
