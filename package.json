@@ -9,7 +9,7 @@
     "dev:renderer": "vite --config vite.config.js",
     "dev:electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
     "start": "electron .",
-    "sync:icons": "python3 scripts/sync-icons.py",
+    "sync:icons": "node scripts/run-sync-icons.js",
     "vue:build": "vite build --config vite.config.js",
     "build:win": "pnpm sync:icons && pnpm vue:build && electron-builder --win nsis",
     "build:win:patch": "node scripts/bump-version.js && pnpm build:win",
