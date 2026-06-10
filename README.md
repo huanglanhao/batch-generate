@@ -1,6 +1,6 @@
 # 批量申请书生成器
 
-基于 `Electron + Vue 3 + Vite + electron-builder` 的桌面项目骨架，面向批量申请书批量生成、固定位置盖章和 JPG 导出场景。
+基于 `Electron + Vue 3 + Vite + electron-builder` 的桌面项目骨架，面向批量申请书批量生成、固定位置盖章和 `JPG / PNG` 导出场景。
 
 ## 交接文档
 
@@ -26,3 +26,6 @@ pnpm build:win
 - Excel 名单导入基础能力
 - 文案模板、盖章配置、本地持久化骨架
 - 导出记录页面骨架
+- `JPG / PNG` 批量导出
+- A4 统一导出尺寸
+- Windows 导出完整性与文字黑度优化
