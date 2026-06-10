@@ -47,7 +47,7 @@ describe('rich text utilities', () => {
     expect(sanitized).toContain('color: rgb(255, 0, 0);');
     expect(sanitized).toContain('text-align: center;');
     expect(sanitized).not.toContain('position: fixed');
-    expect(sanitized).toContain('<span data-variable="name">姓名</span>');
+    expect(sanitized).toContain('<span data-variable="name">${名称占位符}</span>');
     expect(sanitized).toContain('申请人');
   });
 
@@ -58,12 +58,12 @@ describe('rich text utilities', () => {
   });
 
   it('renders name placeholders as escaped text', () => {
-    expect(renderRichTextTemplate('<span data-variable="name">姓名</span>', { name: '<测试>' })).toBe('&lt;测试&gt;');
+    expect(renderRichTextTemplate('<span data-variable="name">${名称占位符}</span>', { name: '<测试>' })).toBe('&lt;测试&gt;');
   });
 
   it('shows imported name on editor variable tokens', () => {
     const root = document.createElement('div');
-    root.innerHTML = '<div><span data-variable="name">姓名</span></div>';
+    root.innerHTML = '<div><span data-variable="name">${名称占位符}</span></div>';
 
     decorateEditorTokens(root, { name: '测试店铺' });
 

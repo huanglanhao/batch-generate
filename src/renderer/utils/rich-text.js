@@ -3,16 +3,16 @@ const ALLOWED_INLINE_TAGS = new Set(['SPAN', 'B', 'STRONG', 'I', 'EM', 'U']);
 const DEFAULT_DOCUMENT_FONT_FAMILY = '"CustomGuoBiaoFangSong", "GBFangSong", "FangSong GB2312", FangSong, STFangsong, serif';
 const VARIABLE_TOKENS = {
   name: {
-    label: '姓名',
+    label: '${名称占位符}',
     placeholder: '{{name}}',
   },
 };
 const LEGACY_DEFAULT_RICH_TEXT_CONTENT =
-  '<div style="text-align: center;"><span style="font-size: 30px; font-weight: 700;">申请书</span></div><div><br></div><div><span data-variable="name">姓名</span></div>';
+  '<div style="text-align: center;"><span style="font-size: 30px; font-weight: 700;">申请书</span></div><div><br></div><div><span data-variable="name">${名称占位符}</span></div>';
 const PREVIOUS_DEFAULT_RICH_TEXT_CONTENT =
   '<div style="margin-top: 6px; margin-bottom: 18px; text-align: center; font-size: 32px;">登录手机号码修改申请书</div>'
   + '<div style="line-height: 1.25;">致拼多多平台：</div>'
-  + '<div style="line-height: 1.25; text-indent: 2em;">我司为店铺名称：<span data-variable="name">姓名</span>（以下简称“本店铺”）店铺入驻主体。</div>'
+  + '<div style="line-height: 1.25; text-indent: 2em;">我司为店铺名称：<span data-variable="name">${名称占位符}</span>（以下简称“本店铺”）店铺入驻主体。</div>'
   + '<div style="line-height: 1.25; text-indent: 2em;">我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
   + '<div style="line-height: 1.25; margin-top: 8px;">特此说明！</div>'
   + '<div style="line-height: 1.25; margin-top: 250px;">请于框内加盖【企业公章】：</div>'
@@ -20,28 +20,28 @@ const PREVIOUS_DEFAULT_RICH_TEXT_CONTENT =
 const CURRENT_DEFAULT_RICH_TEXT_CONTENT =
   '<div style="margin-top: 6px; margin-bottom: 18px; text-align: center; font-size: 19px;">登录手机号码修改申请书</div>'
   + '<div style="line-height: 1.25;">致拼多多平台：</div>'
-  + '<div style="line-height: 1.25; text-indent: 2em;">我司为店铺名称：<span data-variable="name">姓名</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
+  + '<div style="line-height: 1.25; text-indent: 2em;">我司为店铺名称：<span data-variable="name">${名称占位符}</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
   + '<div style="line-height: 1.25; margin-top: 8px;">特此说明！</div>'
   + '<div style="line-height: 1.25; margin-top: 250px;">请于框内加盖【企业公章】：</div>'
   + '<div style="line-height: 1.25; margin-top: 80px;">注意：框内仅供加盖入驻公司红色鲜章，红章需清晰完整且无任何遮挡。</div>';
 const PREVIOUS_CURRENT_DEFAULT_RICH_TEXT_CONTENT =
   '<div style="margin-top: 10px; margin-bottom: 20px; text-align: center; font-size: 20px;">登录手机号码修改申请书</div>'
   + '<div style="line-height: 1.2; text-indent: 2em;">致拼多多平台：</div>'
-  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">姓名</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
+  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">${名称占位符}</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 6px;">特此说明！</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 182px;">请于框内加盖【企业公章】：</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 150px;">注意：框内仅供加盖入驻公司红色鲜章，红章需清晰完整且无任何遮挡。</div>';
 const BROKEN_CURRENT_DEFAULT_RICH_TEXT_CONTENT =
   '<div style="text-align: center; line-height: 1.2; margin-top: 10px; margin-bottom: 20px;">登录手机号码修改申请书</div>'
   + '<div style="line-height: 1.2; text-indent: 2em;">致拼多多平台：</div>'
-  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">姓名</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
+  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">${名称占位符}</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 6px;">特此说明！</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 182px;">请于框内加盖【企业公章】：</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 150px;">注意：框内仅供加盖入驻公司红色鲜章，红章需清晰完整且无任何遮挡。</div>';
 const DEFAULT_RICH_TEXT_CONTENT =
   '<div style="margin-top: 10px; margin-bottom: 20px; line-height: 1.2; text-align: center; font-size: 20px;">登录手机号码修改申请书</div>'
   + '<div style="line-height: 1.2; text-indent: 2em;">致拼多多平台：</div>'
-  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">姓名</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
+  + '<div style="line-height: 1.2; text-indent: 2em;">我司为店铺名称：<span data-variable="name">${名称占位符}</span>（以下简称“本店铺”）店铺入驻主体。我司现申请修改本店铺登录手机号码，上述店铺信息修改系我司真实意愿，我司自愿承担由此产生的一切经济和法律责任。</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 6px;">特此说明！</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 144px;">请于框内加盖【企业公章】：</div>'
   + '<div style="line-height: 1.2; text-indent: 2em; margin-top: 188px;">注意：框内仅供加盖入驻公司红色鲜章，红章需清晰完整且无任何遮挡。</div>';
@@ -310,8 +310,8 @@ export function buildInitialRichTextContent(contentHtml) {
   if (typeof contentHtml === 'string') {
     const normalized = sanitizeRichTextHtml(contentHtml);
     if (
-      normalized === '<span data-variable="name">姓名</span>' ||
-      normalized === '申请人：<span data-variable="name">姓名</span>' ||
+      normalized === '<span data-variable="name">${名称占位符}</span>' ||
+      normalized === '申请人：<span data-variable="name">${名称占位符}</span>' ||
       normalized === '{{name}}' ||
       normalized === sanitizeRichTextHtml(LEGACY_DEFAULT_RICH_TEXT_CONTENT) ||
       normalized === sanitizeRichTextHtml(PREVIOUS_DEFAULT_RICH_TEXT_CONTENT) ||
