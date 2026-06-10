@@ -12,7 +12,7 @@
     "sync:icons": "python3 scripts/sync-icons.py",
     "vue:build": "vite build --config vite.config.js",
     "build:win": "pnpm sync:icons && pnpm vue:build && electron-builder --win nsis",
-    "build:win:patch": "pnpm version patch --no-git-tag-version && pnpm build:win",
+    "build:win:patch": "node scripts/bump-version.js && pnpm build:win",
     "test": "vitest run",
     "test:watch": "vitest",
     "postinstall": "electron-builder install-app-deps"
