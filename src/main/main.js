@@ -123,6 +123,7 @@ async function createWindow() {
     minWidth: 1280,
     minHeight: 820,
     icon: resolveAppIconPath(),
+    autoHideMenuBar: process.platform !== 'darwin',
     backgroundColor: '#eef3fb',
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
@@ -130,6 +131,10 @@ async function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  if (process.platform !== 'darwin') {
+    window.removeMenu();
+  }
 
   if (isDevelopment) {
     await window.loadURL(process.env.VITE_DEV_SERVER_URL);
