@@ -10,16 +10,22 @@ export function sanitizeExportBaseName(name) {
   );
 }
 
-export function buildExportFileName(name) {
-  return `${sanitizeExportBaseName(name)}.jpg`;
+function normalizeExportExtension(format = 'jpg') {
+  const normalized = String(format || 'jpg').trim().toLowerCase();
+  return normalized === 'png' ? 'png' : 'jpg';
 }
 
-export function buildUniqueExportFileName(name, usedNameMap) {
+export function buildExportFileName(name, format = 'jpg') {
+  return `${sanitizeExportBaseName(name)}.${normalizeExportExtension(format)}`;
+}
+
+export function buildUniqueExportFileName(name, usedNameMap, format = 'jpg') {
   const baseName = sanitizeExportBaseName(name);
+  const extension = normalizeExportExtension(format);
   const nextCount = (usedNameMap.get(baseName) || 0) + 1;
   usedNameMap.set(baseName, nextCount);
   if (nextCount === 1) {
-    return `${baseName}.jpg`;
+    return `${baseName}.${extension}`;
   }
-  return `${baseName}(${nextCount}).jpg`;
+  return `${baseName}(${nextCount}).${extension}`;
 }

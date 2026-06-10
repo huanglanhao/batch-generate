@@ -35,6 +35,21 @@ function getImageMimeType(filePath) {
   return 'application/octet-stream';
 }
 
+function normalizeExportFormat(format) {
+  return String(format || '').trim().toLowerCase() === 'png' ? 'png' : 'jpg';
+}
+
+function parseImageDataUrl(dataUrl) {
+  const matched = String(dataUrl || '').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/s);
+  if (!matched) {
+    throw new Error('导出图片数据无效');
+  }
+  return {
+    mimeType: matched[1],
+    base64: matched[2],
+  };
+}
+
 function resolveImportTemplatePath() {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'templates', IMPORT_TEMPLATE_FILE_NAME)
@@ -77,7 +92,7 @@ async function writeExportImages(payload = {}) {
   for (const item of items) {
     if (!item?.fileName || !item?.dataUrl) continue;
     const targetPath = path.join(outputDir, item.fileName);
-    const base64 = String(item.dataUrl).replace(/^data:image\/jpeg;base64,/, '');
+    const { base64 } = parseImageDataUrl(item.dataUrl);
     await fs.promises.writeFile(targetPath, Buffer.from(base64, 'base64'));
     writtenFiles.push(targetPath);
   }
@@ -156,11 +171,13 @@ async function loadRendererRoute(window, routePath) {
   });
 }
 
-async function createExportCaptureWindow(token) {
+async function createExportCaptureWindow(token, payload = {}) {
+  const exportWidth = Math.max(794, Math.round(Number(payload.exportSettings?.width) || 794));
+  const exportHeight = Math.max(1123, Math.round(Number(payload.exportSettings?.height) || 1123));
   const window = new BrowserWindow({
     show: false,
-    width: 794,
-    height: 1123,
+    width: exportWidth,
+    height: exportHeight,
     icon: resolveAppIconPath(),
     useContentSize: true,
     resizable: false,
@@ -246,7 +263,7 @@ app.whenReady().then(async () => {
           window: null,
         });
 
-        const captureWindow = await createExportCaptureWindow(token);
+        const captureWindow = await createExportCaptureWindow(token, payload);
         const session = exportCaptureSessions.get(token);
         if (!session) {
           captureWindow.destroy();
@@ -294,7 +311,11 @@ app.whenReady().then(async () => {
     const width = Math.max(1, Math.round(Number(rect.width) || 0));
     const height = Math.max(1, Math.round(Number(rect.height) || 0));
     const quality = Math.max(0, Math.min(100, Math.round(Number(payload.quality) || 100)));
+    const format = normalizeExportFormat(payload.format);
     const image = await event.sender.capturePage({ x, y, width, height });
+    if (format === 'png') {
+      return `data:image/png;base64,${image.toPNG().toString('base64')}`;
+    }
     return `data:image/jpeg;base64,${image.toJPEG(quality).toString('base64')}`;
   });
   ipcMain.handle('config:get', () => getConfig());

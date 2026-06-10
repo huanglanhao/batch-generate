@@ -1,11 +1,23 @@
 <script setup>
-import { nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import DocumentPreviewCard from '../components/DocumentPreviewCard.vue';
 
 const route = useRoute();
 const previewCardRef = ref(null);
 const payload = ref(null);
+const PAGE_WIDTH = 794;
+const PAGE_HEIGHT = 1123;
+
+const exportScale = computed(() => {
+  const width = Math.max(PAGE_WIDTH, Math.round(Number(payload.value?.exportSettings?.width) || PAGE_WIDTH));
+  return width / PAGE_WIDTH;
+});
+
+const captureRootStyle = computed(() => ({
+  width: `${Math.max(PAGE_WIDTH, Math.round(Number(payload.value?.exportSettings?.width) || PAGE_WIDTH))}px`,
+  height: `${Math.max(PAGE_HEIGHT, Math.round(Number(payload.value?.exportSettings?.height) || PAGE_HEIGHT))}px`,
+}));
 
 async function capturePreview() {
   const token = String(route.query.token || '');
@@ -38,7 +50,8 @@ async function capturePreview() {
     try {
       dataUrl = await window.applicationFormApi.captureCurrentWindowRegion({
         rect,
-        quality: 100,
+        format: payload.value?.exportSettings?.format || 'png',
+        quality: payload.value?.exportSettings?.jpegQuality || 100,
       });
     } catch (error) {
       throw new Error(`captureCurrentWindowRegion: ${error?.message || '未知错误'}`);
@@ -70,7 +83,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="capture-export-root">
+  <section class="capture-export-root" :style="captureRootStyle">
     <DocumentPreviewCard
       v-if="payload"
       ref="previewCardRef"
@@ -78,7 +91,7 @@ onMounted(async () => {
       :page-number="payload.pageNumber || 1"
       :template="payload.template"
       :stamp="payload.stamp"
-      :scale="1"
+      :scale="exportScale"
       :capture-mode="true"
     />
   </section>
@@ -89,8 +102,6 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  width: 794px;
-  height: 1123px;
   overflow: hidden;
   background: #ffffff;
 }

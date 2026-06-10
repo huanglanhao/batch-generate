@@ -28,6 +28,12 @@ const DEFAULT_CONFIG = {
     },
   },
   outputDir: '',
+  exportSettings: {
+    format: 'png',
+    width: 2480,
+    height: 3508,
+    jpegQuality: 100,
+  },
   exportHistory: [],
 };
 
@@ -46,6 +52,7 @@ const store = new Store({
 function getConfig() {
   const storedTemplate = store.get('template') || {};
   const storedStamp = store.get('stamp') || {};
+  const storedExportSettings = store.get('exportSettings') || {};
   return {
     template: {
       ...DEFAULT_CONFIG.template,
@@ -63,6 +70,10 @@ function getConfig() {
       },
     },
     outputDir: store.get('outputDir') || '',
+    exportSettings: {
+      ...DEFAULT_CONFIG.exportSettings,
+      ...storedExportSettings,
+    },
     exportHistory: Array.isArray(store.get('exportHistory')) ? store.get('exportHistory') : [],
   };
 }
@@ -85,11 +96,16 @@ function saveConfig(payload = {}) {
       },
     },
     outputDir: payload.outputDir ?? current.outputDir,
+    exportSettings: {
+      ...current.exportSettings,
+      ...(payload.exportSettings || {}),
+    },
     exportHistory: current.exportHistory,
   };
   store.set('template', { textBox: next.template.textBox });
   store.set('stamp', next.stamp);
   store.set('outputDir', next.outputDir);
+  store.set('exportSettings', next.exportSettings);
   return getConfig();
 }
 

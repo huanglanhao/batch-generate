@@ -639,10 +639,20 @@ code {
   flex-wrap: wrap;
   gap: 12px;
   align-self: end;
+  align-items: end;
 }
 
 .toolbar-actions button {
   white-space: nowrap;
+}
+
+.toolbar-action-btn {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.1;
+  box-shadow: none;
 }
 
 .toolbar-align-btn {

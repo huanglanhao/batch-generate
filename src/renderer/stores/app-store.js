@@ -85,6 +85,12 @@ const DEFAULT_STAMP = {
   randomSeedNonce: 0,
   box: { ...DEFAULT_STAMP_BOX },
 };
+const DEFAULT_EXPORT_SETTINGS = {
+  format: 'png',
+  width: 2480,
+  height: 3508,
+  jpegQuality: 100,
+};
 
 function isSameBox(box, targetBox) {
   return ['x', 'y', 'width', 'height'].every((key) => Number(box?.[key]) === Number(targetBox[key]));
@@ -178,12 +184,22 @@ function buildBootstrapStamp(stamp = {}) {
   };
 }
 
+function normalizeLoadedExportSettings(exportSettings = {}) {
+  return {
+    format: String(exportSettings.format || DEFAULT_EXPORT_SETTINGS.format).trim().toLowerCase() === 'png' ? 'png' : 'jpg',
+    width: Math.max(794, Math.round(Number(exportSettings.width) || DEFAULT_EXPORT_SETTINGS.width)),
+    height: Math.max(1123, Math.round(Number(exportSettings.height) || DEFAULT_EXPORT_SETTINGS.height)),
+    jpegQuality: Math.max(0, Math.min(100, Math.round(Number(exportSettings.jpegQuality) || DEFAULT_EXPORT_SETTINGS.jpegQuality))),
+  };
+}
+
 export const useAppStore = defineStore('application-form', {
   state: () => ({
     meta: null,
     template: { ...DEFAULT_TEMPLATE, textBox: { ...DEFAULT_TEMPLATE.textBox } },
     stamp: { ...DEFAULT_STAMP, box: { ...DEFAULT_STAMP.box } },
     outputDir: '',
+    exportSettings: { ...DEFAULT_EXPORT_SETTINGS },
     exportHistory: [],
     workbookPath: '',
     records: [],
@@ -218,10 +234,12 @@ export const useAppStore = defineStore('application-form', {
         this.stamp.previewUrl = (await window.applicationFormApi.readImageAsDataUrl(this.stamp.imagePath)) || '';
       }
       this.outputDir = config.outputDir || '';
+      this.exportSettings = normalizeLoadedExportSettings(config.exportSettings || {});
       this.exportHistory = Array.isArray(config.exportHistory) ? config.exportHistory : [];
     },
     async persistConfig() {
       const currentTemplate = normalizeLoadedTemplate(toSerializableObject(this.template));
+      const currentExportSettings = normalizeLoadedExportSettings(toSerializableObject(this.exportSettings));
       const config = await window.applicationFormApi.saveConfig({
         template: toSerializableObject(this.template),
         stamp: {
@@ -231,6 +249,7 @@ export const useAppStore = defineStore('application-form', {
           box: toSerializableObject(this.stamp.box),
         },
         outputDir: this.outputDir,
+        exportSettings: currentExportSettings,
       });
       this.template = {
         ...currentTemplate,
@@ -244,6 +263,7 @@ export const useAppStore = defineStore('application-form', {
         previewUrl: this.stamp.previewUrl,
       };
       this.outputDir = config.outputDir || '';
+      this.exportSettings = normalizeLoadedExportSettings(config.exportSettings || currentExportSettings);
     },
     async importWorkbook() {
       const filePath = await window.applicationFormApi.selectExcelFile();
@@ -294,7 +314,7 @@ export const useAppStore = defineStore('application-form', {
       };
       this.exportHistory = await window.applicationFormApi.pushExportHistory(record);
     },
-    async exportAsJpg() {
+    async exportDocuments() {
       if (!this.records.length || this.exporting) return;
 
       const outputDir = await window.applicationFormApi.selectOutputDir();
@@ -306,6 +326,7 @@ export const useAppStore = defineStore('application-form', {
       try {
         const items = [];
         const usedNameMap = new Map();
+        const exportSettings = normalizeLoadedExportSettings(toSerializableObject(this.exportSettings));
         for (let index = 0; index < this.records.length; index += 1) {
           const record = this.records[index];
           let dataUrl = '';
@@ -315,12 +336,13 @@ export const useAppStore = defineStore('application-form', {
               pageNumber: index + 1,
               template: toSerializableObject(this.template),
               stamp: toSerializableObject(this.stamp),
+              exportSettings,
             });
           } catch (error) {
             throw new Error(`capturePreviewPage: ${error?.message || '未知错误'}`);
           }
           items.push({
-            fileName: buildUniqueExportFileName(record.name, usedNameMap),
+            fileName: buildUniqueExportFileName(record.name, usedNameMap, exportSettings.format),
             dataUrl,
           });
         }
@@ -339,12 +361,13 @@ export const useAppStore = defineStore('application-form', {
           successCount: result.files.length,
           failedCount: Math.max(0, this.records.length - result.files.length),
           outputDir: result.outputDir,
+          format: exportSettings.format,
           status: result.files.length === this.records.length ? 'success' : 'partial',
         };
         this.exportHistory = await window.applicationFormApi.pushExportHistory(record);
       } catch (error) {
         if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-          window.alert(`导出 JPG 失败：${error?.message || '未知错误'}`);
+          window.alert(`导出 ${this.exportSettings.format.toUpperCase()} 失败：${error?.message || '未知错误'}`);
         }
       } finally {
         this.exporting = false;

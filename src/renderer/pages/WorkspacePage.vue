@@ -246,6 +246,11 @@ function applyTextIndent(event) {
   selectedTextIndent.value = event.target.value;
   previewCardRef.value?.applyParagraphFormatting({ textIndent: selectedTextIndent.value });
 }
+
+async function handleExportFormatChange(event) {
+  appStore.exportSettings.format = event.target.value === 'png' ? 'png' : 'jpg';
+  await appStore.persistConfig();
+}
 </script>
 
 <template>
@@ -340,14 +345,21 @@ function applyTextIndent(event) {
         </div>
 
         <div class="toolbar-actions">
-          <button class="secondary-btn" :class="{ 'is-tool-active': appStore.drawMode === 'stamp-box' }" @click="appStore.setDrawMode('stamp-box')">
+          <label class="toolbar-field">
+            <span>导出格式</span>
+            <select :value="appStore.exportSettings.format" @change="handleExportFormatChange">
+              <option value="png">PNG</option>
+              <option value="jpg">JPG</option>
+            </select>
+          </label>
+          <button class="secondary-btn toolbar-action-btn" :class="{ 'is-tool-active': appStore.drawMode === 'stamp-box' }" @click="appStore.setDrawMode('stamp-box')">
             盖章位置
           </button>
-          <button class="secondary-btn" @click="insertNameVariable">插入名称</button>
-          <button class="primary-btn" @click="appStore.importWorkbook">导入名称</button>
-          <button class="primary-btn" @click="appStore.selectStampFile">导入盖章</button>
-          <button class="primary-btn" :disabled="appStore.exporting || !appStore.records.length" @click="appStore.exportAsJpg">
-            {{ appStore.exporting ? '导出中...' : '导出 JPG' }}
+          <button class="secondary-btn toolbar-action-btn" @click="insertNameVariable">插入名称</button>
+          <button class="primary-btn toolbar-action-btn" @click="appStore.importWorkbook">导入名称</button>
+          <button class="primary-btn toolbar-action-btn" @click="appStore.selectStampFile">导入盖章</button>
+          <button class="primary-btn toolbar-action-btn" :disabled="appStore.exporting || !appStore.records.length" @click="appStore.exportDocuments">
+            {{ appStore.exporting ? '导出中...' : `导出 ${appStore.exportSettings.format.toUpperCase()}` }}
           </button>
         </div>
       </div>
