@@ -53,11 +53,9 @@ async function capturePreview() {
     let dataUrl = '';
     try {
       dataUrl = await window.applicationFormApi.captureCurrentWindowRegion({
-        token,
         rect,
         format: payload.value?.exportSettings?.format || 'png',
         quality: payload.value?.exportSettings?.jpegQuality || 100,
-        useOffscreen: Boolean(captureSettings.value?.useOffscreen),
         targetWidth: Math.max(1, Math.round(Number(captureSettings.value?.outputWidth) || Number(payload.value?.exportSettings?.width) || rect.width)),
         targetHeight: Math.max(1, Math.round(Number(captureSettings.value?.outputHeight) || Number(payload.value?.exportSettings?.height) || rect.height)),
       });

@@ -12,14 +12,17 @@ function resolveCaptureLayout(exportSettings = {}, platform = process.platform, 
   const outputHeight = normalizeDimension(exportSettings.height, DEFAULT_EXPORT_HEIGHT, PAGE_HEIGHT);
 
   if (platform === 'win32') {
+    const availableWidth = Math.max(1, Math.round(Number(workAreaSize?.width) || 0));
+    const availableHeight = Math.max(1, Math.round(Number(workAreaSize?.height) || 0));
+    const fitScale = Math.min(1, availableWidth / outputWidth, availableHeight / outputHeight);
     return {
       outputWidth,
       outputHeight,
-      viewportWidth: outputWidth,
-      viewportHeight: outputHeight,
-      pageScale: outputWidth / PAGE_WIDTH,
-      fitScale: 1,
-      useOffscreen: true,
+      viewportWidth: Math.max(1, Math.round(outputWidth * fitScale)),
+      viewportHeight: Math.max(1, Math.round(outputHeight * fitScale)),
+      pageScale: (outputWidth / PAGE_WIDTH) * fitScale,
+      fitScale,
+      useOffscreen: false,
     };
   }
 
