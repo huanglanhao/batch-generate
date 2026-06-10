@@ -40,6 +40,10 @@ function normalizeExportFormat(format) {
   return String(format || '').trim().toLowerCase() === 'png' ? 'png' : 'jpg';
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function parseImageDataUrl(dataUrl) {
   const matched = String(dataUrl || '').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/s);
   if (!matched) {
@@ -196,6 +200,8 @@ async function createExportCaptureWindow(token, payload = {}) {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
+      offscreen: Boolean(captureSettings.useOffscreen),
     },
   });
 
@@ -255,6 +261,7 @@ app.whenReady().then(async () => {
       captureSettings,
     };
     return new Promise(async (resolve, reject) => {
+      let resolveFrameReady = null;
       const timeout = setTimeout(() => {
         const session = exportCaptureSessions.get(token);
         exportCaptureSessions.delete(token);
@@ -274,6 +281,11 @@ app.whenReady().then(async () => {
             reject(error);
           },
           window: null,
+          latestFrame: null,
+          frameReadyPromise: new Promise((frameResolve) => {
+            resolveFrameReady = frameResolve;
+          }),
+          resolveFrameReady,
         });
 
         const captureWindow = await createExportCaptureWindow(token, capturePayload);
@@ -285,6 +297,18 @@ app.whenReady().then(async () => {
         }
 
         session.window = captureWindow;
+        if (captureSettings.useOffscreen) {
+          captureWindow.webContents.setFrameRate(60);
+          captureWindow.webContents.on('paint', (_, __, image) => {
+            const activeSession = exportCaptureSessions.get(token);
+            if (!activeSession) return;
+            activeSession.latestFrame = image;
+            if (activeSession.resolveFrameReady) {
+              activeSession.resolveFrameReady();
+              activeSession.resolveFrameReady = null;
+            }
+          });
+        }
         captureWindow.on('closed', () => {
           const activeSession = exportCaptureSessions.get(token);
           if (!activeSession) return;
@@ -327,7 +351,31 @@ app.whenReady().then(async () => {
     const targetHeight = Math.max(1, Math.round(Number(payload.targetHeight) || 0));
     const quality = Math.max(0, Math.min(100, Math.round(Number(payload.quality) || 100)));
     const format = normalizeExportFormat(payload.format);
-    let image = await event.sender.capturePage({ x, y, width, height });
+    const session = payload.token ? exportCaptureSessions.get(payload.token) : null;
+    let image = null;
+
+    if (payload.useOffscreen && session) {
+      if (!session.latestFrame && session.frameReadyPromise) {
+        await Promise.race([session.frameReadyPromise, wait(1200)]);
+      }
+      if (session.latestFrame) {
+        const frameSize = session.latestFrame.getSize();
+        const cropX = Math.max(0, Math.min(frameSize.width - 1, x));
+        const cropY = Math.max(0, Math.min(frameSize.height - 1, y));
+        const cropWidth = Math.max(1, Math.min(width, frameSize.width - cropX));
+        const cropHeight = Math.max(1, Math.min(height, frameSize.height - cropY));
+        image = session.latestFrame.crop({
+          x: cropX,
+          y: cropY,
+          width: cropWidth,
+          height: cropHeight,
+        });
+      }
+    }
+
+    if (!image) {
+      image = await event.sender.capturePage({ x, y, width, height });
+    }
     if (targetWidth > 0 && targetHeight > 0) {
       const currentSize = image.getSize();
       if (currentSize.width !== targetWidth || currentSize.height !== targetHeight) {
