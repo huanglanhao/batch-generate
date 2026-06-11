@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('applicationFormApi', {
   selectOutputDir: () => ipcRenderer.invoke('dialog:select-output-dir'),
   parseWorkbook: (filePath) => ipcRenderer.invoke('workbook:parse', filePath),
   readImageAsDataUrl: (filePath) => ipcRenderer.invoke('asset:read-image-data-url', filePath),
+  saveGeneratedStampImage: (payload) => ipcRenderer.invoke('asset:save-generated-stamp-image', payload),
   writeExportImages: (payload) => ipcRenderer.invoke('exports:write-images', payload),
   capturePreviewPage: (payload) => ipcRenderer.invoke('exports:capture-preview-page', payload),
   getExportCapturePayload: (token) => ipcRenderer.invoke('exports:get-capture-payload', token),

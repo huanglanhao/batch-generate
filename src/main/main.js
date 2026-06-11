@@ -51,6 +51,13 @@ function parseImageDataUrl(dataUrl) {
   };
 }
 
+function sanitizeFileName(name, fallback = '生成印章') {
+  const normalized = String(name || '')
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+    .trim();
+  return normalized || fallback;
+}
+
 function resolveImportTemplatePath() {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'templates', IMPORT_TEMPLATE_FILE_NAME)
@@ -101,6 +108,24 @@ async function writeExportImages(payload = {}) {
     outputDir,
     files: writtenFiles,
   };
+}
+
+async function saveGeneratedStampImage(payload = {}) {
+  const dataUrl = String(payload.dataUrl || '').trim();
+  if (!dataUrl) {
+    throw new Error('缺少印章图片数据');
+  }
+
+  const suggestedName = `${sanitizeFileName(payload.fileName)}.png`;
+  const result = await dialog.showSaveDialog({
+    defaultPath: path.join(app.getPath('downloads'), suggestedName),
+    filters: [{ name: 'PNG 图片', extensions: ['png'] }],
+  });
+  if (result.canceled || !result.filePath) return null;
+
+  const { base64 } = parseImageDataUrl(dataUrl);
+  await fs.promises.writeFile(result.filePath, Buffer.from(base64, 'base64'));
+  return result.filePath;
 }
 
 function parseWorkbook(filePath) {
@@ -243,6 +268,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('workbook:parse', async (_, filePath) => parseWorkbook(filePath));
   ipcMain.handle('asset:read-image-data-url', async (_, filePath) => readImageAsDataUrl(filePath));
   ipcMain.handle('exports:write-images', async (_, payload) => writeExportImages(payload));
+  ipcMain.handle('asset:save-generated-stamp-image', async (_, payload) => saveGeneratedStampImage(payload));
   ipcMain.handle('exports:capture-preview-page', async (_, payload) => {
     const token = randomUUID();
     const captureSettings = resolveCaptureLayout(

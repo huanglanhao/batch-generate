@@ -53,7 +53,10 @@ describe('app store bootstrap defaults', () => {
 
   it('restores default stamp box while keeping the selected stamp image', () => {
     const stamp = buildBootstrapStamp({
+      source: 'generated',
       imagePath: '/tmp/company-stamp.png',
+      content: '中山悟然电子商务有限公司',
+      fontKey: 'guobiao-fangsong',
       randomizePosition: true,
       randomSeedNonce: 3,
       box: {
@@ -64,7 +67,10 @@ describe('app store bootstrap defaults', () => {
       },
     });
 
+    expect(stamp.source).toBe('generated');
     expect(stamp.imagePath).toBe('/tmp/company-stamp.png');
+    expect(stamp.content).toBe('中山悟然电子商务有限公司');
+    expect(stamp.fontKey).toBe('guobiao-fangsong');
     expect(stamp.previewUrl).toBe('');
     expect(stamp.randomizePosition).toBe(true);
     expect(stamp.randomSeedNonce).toBe(3);
@@ -100,7 +106,10 @@ describe('app store bootstrap defaults', () => {
     window.applicationFormApi.saveConfig.mockResolvedValue({
       template: store.template,
       stamp: {
+        source: store.stamp.source,
         imagePath: store.stamp.imagePath,
+        content: store.stamp.content,
+        fontKey: store.stamp.fontKey,
         randomizePosition: store.stamp.randomizePosition,
         randomSeedNonce: store.stamp.randomSeedNonce,
         box: store.stamp.box,
@@ -140,5 +149,43 @@ describe('app store bootstrap defaults', () => {
         { fileName: '李四.png', dataUrl: 'data:image/png;base64,BBB' },
       ],
     });
+  });
+
+  it('saves generated stamp only after explicit confirmation', async () => {
+    const store = useAppStore();
+    window.applicationFormApi.saveConfig.mockResolvedValue({
+      template: store.template,
+      stamp: {
+        source: 'generated',
+        imagePath: '',
+        content: '中山悟然电子商务有限公司',
+        fontKey: 'guobiao-fangsong',
+        randomizePosition: false,
+        randomSeedNonce: 0,
+        box: store.stamp.box,
+      },
+      outputDir: '',
+      exportSettings: store.exportSettings,
+    });
+
+    const saved = await store.saveGeneratedStamp(
+      '中山悟然电子商务有限公司',
+      'data:image/png;base64,SEAL',
+      'guobiao-fangsong',
+    );
+
+    expect(saved).toBe(true);
+    expect(store.stamp.source).toBe('generated');
+    expect(store.stamp.content).toBe('中山悟然电子商务有限公司');
+    expect(store.stamp.fontKey).toBe('guobiao-fangsong');
+    expect(store.stamp.previewUrl).toBe('data:image/png;base64,SEAL');
+    expect(window.applicationFormApi.saveConfig).toHaveBeenCalledWith(expect.objectContaining({
+      stamp: expect.objectContaining({
+        source: 'generated',
+        content: '中山悟然电子商务有限公司',
+        fontKey: 'guobiao-fangsong',
+        imagePath: '',
+      }),
+    }));
   });
 });

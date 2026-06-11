@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { buildUniqueExportFileName } from '../utils/document-template';
 import { buildInitialRichTextContent, DEFAULT_RICH_TEXT_CONTENT, EMPTY_RICH_TEXT_CONTENT } from '../utils/rich-text';
+import { generateStampPreviewUrl, normalizeStampFontKey, normalizeStampText } from '../utils/stamp-generator';
 
 let notificationTimer = null;
 
@@ -79,7 +80,10 @@ const OLD_DEFAULT_STAMP_BOX = {
   height: 198,
 };
 const DEFAULT_STAMP = {
+  source: 'upload',
   imagePath: '',
+  content: '',
+  fontKey: 'electronic-seal',
   previewUrl: '',
   randomizePosition: false,
   randomSeedNonce: 0,
@@ -146,10 +150,17 @@ function normalizeTemplatePresetKey(presetKey) {
 }
 
 function normalizeLoadedStamp(stamp = {}) {
+  const normalizedContent = normalizeStampText(stamp.content);
+  const normalizedSource = stamp.source === 'generated'
+    ? 'generated'
+    : (stamp.imagePath ? 'upload' : (normalizedContent ? 'generated' : 'upload'));
   return {
     ...DEFAULT_STAMP,
     ...stamp,
+    source: normalizedSource,
     randomSeedNonce: Math.max(0, Number(stamp.randomSeedNonce) || 0),
+    content: normalizedContent,
+    fontKey: normalizeStampFontKey(stamp.fontKey),
     box: isSameBox(stamp.box, LEGACY_STAMP_BOX)
       || isSameBox(stamp.box, PREVIOUS_STAMP_BOX)
       || isSameBox(stamp.box, CURRENT_STAMP_BOX)
@@ -174,12 +185,16 @@ function buildBootstrapTemplate(template = {}) {
 }
 
 function buildBootstrapStamp(stamp = {}) {
+  const normalizedStamp = normalizeLoadedStamp(stamp);
   return {
     ...DEFAULT_STAMP,
-    imagePath: stamp.imagePath || DEFAULT_STAMP.imagePath,
+    source: normalizedStamp.source,
+    imagePath: normalizedStamp.imagePath || DEFAULT_STAMP.imagePath,
+    content: normalizedStamp.content || DEFAULT_STAMP.content,
+    fontKey: normalizedStamp.fontKey || DEFAULT_STAMP.fontKey,
     previewUrl: '',
-    randomizePosition: Boolean(stamp.randomizePosition),
-    randomSeedNonce: Math.max(0, Number(stamp.randomSeedNonce) || 0),
+    randomizePosition: Boolean(normalizedStamp.randomizePosition),
+    randomSeedNonce: Math.max(0, Number(normalizedStamp.randomSeedNonce) || 0),
     box: { ...DEFAULT_STAMP.box },
   };
 }
@@ -230,9 +245,7 @@ export const useAppStore = defineStore('application-form', {
       this.meta = meta;
       this.template = buildBootstrapTemplate(config.template || {});
       this.stamp = buildBootstrapStamp(config.stamp || {});
-      if (this.stamp.imagePath) {
-        this.stamp.previewUrl = (await window.applicationFormApi.readImageAsDataUrl(this.stamp.imagePath)) || '';
-      }
+      await this.refreshStampPreview();
       this.outputDir = config.outputDir || '';
       this.exportSettings = normalizeLoadedExportSettings(config.exportSettings || {});
       this.exportHistory = Array.isArray(config.exportHistory) ? config.exportHistory : [];
@@ -243,7 +256,10 @@ export const useAppStore = defineStore('application-form', {
       const config = await window.applicationFormApi.saveConfig({
         template: toSerializableObject(this.template),
         stamp: {
+          source: this.stamp.source,
           imagePath: this.stamp.imagePath,
+          content: this.stamp.content,
+          fontKey: this.stamp.fontKey,
           randomizePosition: Boolean(this.stamp.randomizePosition),
           randomSeedNonce: Math.max(0, Number(this.stamp.randomSeedNonce) || 0),
           box: toSerializableObject(this.stamp.box),
@@ -288,15 +304,57 @@ export const useAppStore = defineStore('application-form', {
     async selectStampFile() {
       const filePath = await window.applicationFormApi.selectStampFile();
       if (!filePath) return;
+      this.stamp.source = 'upload';
       this.stamp.imagePath = filePath;
-      this.stamp.previewUrl = (await window.applicationFormApi.readImageAsDataUrl(filePath)) || '';
+      this.stamp.previewUrl = '';
+      await this.refreshStampPreview();
       await this.persistConfig();
     },
     async clearStampFile() {
       if (!this.stamp.imagePath && !this.stamp.previewUrl) return;
+      this.stamp.source = 'upload';
       this.stamp.imagePath = '';
       this.stamp.previewUrl = '';
       await this.persistConfig();
+    },
+    async generateStampByText(text, fontKey = this.stamp.fontKey) {
+      const normalizedText = normalizeStampText(text);
+      if (!normalizedText) {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert('请输入盖章内容');
+        }
+        return false;
+      }
+
+      return {
+        content: normalizedText,
+        fontKey: normalizeStampFontKey(fontKey),
+        previewUrl: await generateStampPreviewUrl({
+          text: normalizedText,
+          fontKey,
+        }),
+      };
+    },
+    async saveGeneratedStamp(text, previewUrl = '', fontKey = this.stamp.fontKey) {
+      const normalizedText = normalizeStampText(text);
+      const normalizedFontKey = normalizeStampFontKey(fontKey);
+      if (!normalizedText) {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert('请输入盖章内容');
+        }
+        return false;
+      }
+
+      this.stamp.source = 'generated';
+      this.stamp.content = normalizedText;
+      this.stamp.fontKey = normalizedFontKey;
+      this.stamp.imagePath = '';
+      this.stamp.previewUrl = previewUrl || (await generateStampPreviewUrl({
+        text: normalizedText,
+        fontKey: normalizedFontKey,
+      }));
+      await this.persistConfig();
+      return true;
     },
     async selectOutputDir() {
       const outputDir = await window.applicationFormApi.selectOutputDir();
@@ -446,6 +504,20 @@ export const useAppStore = defineStore('application-form', {
         this.stamp.randomSeedNonce = Math.max(0, Number(this.stamp.randomSeedNonce) || 0) + 1;
       }
       this.stamp.randomizePosition = nextEnabled;
+    },
+    async refreshStampPreview() {
+      if (this.stamp.source === 'generated' && this.stamp.content) {
+        this.stamp.previewUrl = await generateStampPreviewUrl({
+          text: this.stamp.content,
+          fontKey: this.stamp.fontKey,
+        });
+        return;
+      }
+      if (this.stamp.imagePath) {
+        this.stamp.previewUrl = (await window.applicationFormApi.readImageAsDataUrl(this.stamp.imagePath)) || '';
+        return;
+      }
+      this.stamp.previewUrl = '';
     },
     async moveBox(type, box) {
       if (type === 'text-box') {

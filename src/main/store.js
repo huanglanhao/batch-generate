@@ -18,7 +18,10 @@ const DEFAULT_CONFIG = {
     },
   },
   stamp: {
+    source: 'upload',
     imagePath: '',
+    content: '',
+    fontKey: 'electronic-seal',
     randomizePosition: false,
     box: {
       x: 379,
@@ -88,7 +91,10 @@ function saveConfig(payload = {}) {
       },
     },
     stamp: {
+      source: payload.stamp?.source ?? current.stamp.source,
       imagePath: payload.stamp?.imagePath ?? current.stamp.imagePath,
+      content: payload.stamp?.content ?? current.stamp.content,
+      fontKey: payload.stamp?.fontKey ?? current.stamp.fontKey,
       randomizePosition: payload.stamp?.randomizePosition ?? current.stamp.randomizePosition,
       box: {
         ...current.stamp.box,
