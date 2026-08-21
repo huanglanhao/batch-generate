@@ -14,6 +14,7 @@
     "vue:build": "vite build --config vite.config.js",
     "build:win": "pnpm prepare:win-build && pnpm sync:icons && pnpm vue:build && electron-builder --win nsis",
     "build:win:patch": "node scripts/bump-version.js && pnpm build:win",
+    "build:mac": "pnpm prepare:win-build && pnpm sync:icons && pnpm vue:build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
     "test": "vitest run",
     "test:watch": "vitest",
     "postinstall": "electron-builder install-app-deps"
@@ -45,6 +46,27 @@
       "src/preload/**/*",
       "package.json"
     ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.business",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "${productName}",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
     "win": {
       "icon": "build/icon.ico",
       "target": [
