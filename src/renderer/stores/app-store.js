@@ -83,7 +83,7 @@ const DEFAULT_STAMP = {
   source: 'upload',
   imagePath: '',
   content: '',
-  fontKey: 'electronic-seal',
+  fontKey: 'guobiao-fangsong',
   previewUrl: '',
   randomizePosition: false,
   randomSeedNonce: 0,
@@ -160,7 +160,9 @@ function normalizeLoadedStamp(stamp = {}) {
     source: normalizedSource,
     randomSeedNonce: Math.max(0, Number(stamp.randomSeedNonce) || 0),
     content: normalizedContent,
-    fontKey: normalizeStampFontKey(stamp.fontKey),
+    fontKey: normalizeStampFontKey(stamp.fontKey) === 'electronic-seal'
+      ? DEFAULT_STAMP.fontKey
+      : normalizeStampFontKey(stamp.fontKey),
     box: isSameBox(stamp.box, LEGACY_STAMP_BOX)
       || isSameBox(stamp.box, PREVIOUS_STAMP_BOX)
       || isSameBox(stamp.box, CURRENT_STAMP_BOX)
@@ -249,6 +251,9 @@ export const useAppStore = defineStore('application-form', {
       this.outputDir = config.outputDir || '';
       this.exportSettings = normalizeLoadedExportSettings(config.exportSettings || {});
       this.exportHistory = Array.isArray(config.exportHistory) ? config.exportHistory : [];
+      if (normalizeStampFontKey((config.stamp || {}).fontKey) === 'electronic-seal') {
+        await this.persistConfig();
+      }
     },
     async persistConfig() {
       const currentTemplate = normalizeLoadedTemplate(toSerializableObject(this.template));

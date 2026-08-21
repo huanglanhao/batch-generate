@@ -12,13 +12,13 @@ import {
 
 const appStore = useAppStore();
 const generatedStampContent = ref(appStore.stamp.content || '');
-const selectedStampFontKey = ref(appStore.stamp.fontKey || 'electronic-seal');
+const selectedStampFontKey = ref(normalizeStampFontKey(appStore.stamp.fontKey));
 const previewGeneratedStamp = ref(null);
 const officialSealTemplateUrl = getOfficialSealTemplateUrl();
 const stampFontOptions = getStampFontOptions();
 const selectedStampFontLabel = computed(() => {
   const normalizedFontKey = normalizeStampFontKey(selectedStampFontKey.value);
-  return stampFontOptions.find((option) => option.key === normalizedFontKey)?.label || '电子印章字体';
+  return stampFontOptions.find((option) => option.key === normalizedFontKey)?.label || '国标仿宋';
 });
 
 const stampFileLabel = computed(() => {
@@ -45,6 +45,7 @@ watch(
       selectedStampFontKey.value = normalizeStampFontKey(nextValue);
     }
   },
+  { immediate: true },
 );
 
 watch(selectedStampFontKey, async (nextValue, previousValue) => {
@@ -77,6 +78,22 @@ async function handleClearStamp() {
   await appStore.clearStampFile();
 }
 
+async function handlePasteStampContent() {
+  try {
+    const clipboardText = window.applicationFormApi?.readClipboardText
+      ? await window.applicationFormApi.readClipboardText()
+      : (await navigator.clipboard?.readText?.() || '');
+    const nextValue = String(clipboardText || '').trim();
+    if (!nextValue) {
+      window.alert('剪贴板中没有可粘贴的文字');
+      return;
+    }
+    generatedStampContent.value = nextValue;
+  } catch (error) {
+    window.alert(`粘贴失败：${error?.message || '未知错误'}`);
+  }
+}
+
 async function handleGenerateStamp() {
   const normalizedText = normalizeStampText(generatedStampContent.value);
   if (!normalizedText) {
@@ -84,16 +101,22 @@ async function handleGenerateStamp() {
     return;
   }
   const normalizedFontKey = normalizeStampFontKey(selectedStampFontKey.value);
-  previewGeneratedStamp.value = {
-    content: normalizedText,
-    fontKey: normalizedFontKey,
-    previewUrl: await generateStampPreviewUrl({
+  try {
+    const previewUrl = await generateStampPreviewUrl({
       text: normalizedText,
       fontKey: normalizedFontKey,
-    }),
-  };
-  selectedStampFontKey.value = normalizedFontKey;
-  generatedStampContent.value = normalizedText;
+    });
+    previewGeneratedStamp.value = {
+      content: normalizedText,
+      fontKey: normalizedFontKey,
+      previewUrl,
+    };
+    selectedStampFontKey.value = normalizedFontKey;
+    generatedStampContent.value = normalizedText;
+    await appStore.saveGeneratedStamp(normalizedText, previewUrl, normalizedFontKey);
+  } catch (error) {
+    window.alert(`生成盖章失败：${error?.message || '未知错误'}`);
+  }
 }
 
 async function handleSaveGeneratedStamp() {
@@ -198,14 +221,30 @@ async function handleSaveGeneratedStamp() {
           </span>
         </div>
 
-        <label class="field-item stamp-generator-input">
+        <div class="field-item stamp-generator-input">
           <span>盖章内容</span>
-          <input
-            v-model.trim="generatedStampContent"
-            type="text"
-            placeholder="请输入盖章内容，例如：中山XX电子商务有限公司"
-          />
-        </label>
+          <div class="stamp-content-input-wrap">
+            <input
+              v-model.trim="generatedStampContent"
+              type="text"
+              placeholder="请输入盖章内容，例如：中山XX电子商务有限公司"
+            />
+            <button
+              type="button"
+              class="stamp-paste-btn"
+              title="粘贴"
+              aria-label="粘贴剪贴板内容"
+              @click="handlePasteStampContent"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2H9Zm-3 4v10h12V7h-1v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V7H6Z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
 
         <label class="field-item stamp-font-field">
           <span>盖章字体</span>
@@ -333,8 +372,41 @@ async function handleSaveGeneratedStamp() {
   font-weight: 600;
 }
 
+.stamp-content-input-wrap {
+  position: relative;
+}
+
 .stamp-generator-input input {
   min-height: 42px;
+  padding-right: 44px;
+}
+
+.stamp-paste-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #3b5dc9;
+  transform: translateY(-50%);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.stamp-paste-btn:hover {
+  background: rgba(59, 93, 201, 0.12);
+  color: #27417b;
+}
+
+.stamp-paste-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .stamp-font-field {

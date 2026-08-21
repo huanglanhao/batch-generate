@@ -2,11 +2,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('applicationFormApi', {
   getAppMeta: () => ipcRenderer.invoke('app:get-meta'),
+  readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   downloadImportTemplate: () => ipcRenderer.invoke('template:download-import'),
   selectExcelFile: () => ipcRenderer.invoke('dialog:select-excel'),
   selectStampFile: () => ipcRenderer.invoke('dialog:select-stamp'),
   selectOutputDir: () => ipcRenderer.invoke('dialog:select-output-dir'),
   parseWorkbook: (filePath) => ipcRenderer.invoke('workbook:parse', filePath),
+  parsePhoneSourceWorkbook: (filePath) => ipcRenderer.invoke('phone-match:parse-source', filePath),
+  parsePhoneTargetWorkbook: (filePath) => ipcRenderer.invoke('phone-match:parse-target', filePath),
+  analyzePhoneMatch: (payload) => ipcRenderer.invoke('phone-match:analyze', payload),
+  exportMatchedPhoneWorkbook: (payload) => ipcRenderer.invoke('phone-match:export', payload),
   readImageAsDataUrl: (filePath) => ipcRenderer.invoke('asset:read-image-data-url', filePath),
   saveGeneratedStampImage: (payload) => ipcRenderer.invoke('asset:save-generated-stamp-image', payload),
   writeExportImages: (payload) => ipcRenderer.invoke('exports:write-images', payload),
