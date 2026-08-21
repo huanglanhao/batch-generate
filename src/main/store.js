@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
     source: 'upload',
     imagePath: '',
     content: '',
-    fontKey: 'electronic-seal',
+    fontKey: 'guobiao-fangsong',
     randomizePosition: false,
     box: {
       x: 379,
@@ -67,6 +67,9 @@ function getConfig() {
     stamp: {
       ...DEFAULT_CONFIG.stamp,
       ...storedStamp,
+      fontKey: storedStamp.fontKey === 'electronic-seal'
+        ? DEFAULT_CONFIG.stamp.fontKey
+        : (storedStamp.fontKey || DEFAULT_CONFIG.stamp.fontKey),
       box: {
         ...DEFAULT_CONFIG.stamp.box,
         ...(storedStamp.box || {}),

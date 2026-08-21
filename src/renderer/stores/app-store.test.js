@@ -82,6 +82,16 @@ describe('app store bootstrap defaults', () => {
     });
   });
 
+  it('migrates the previous default stamp font to 国标仿宋', () => {
+    const stamp = buildBootstrapStamp({
+      source: 'upload',
+      imagePath: '/tmp/company-stamp.png',
+      fontKey: 'electronic-seal',
+    });
+
+    expect(stamp.fontKey).toBe('guobiao-fangsong');
+  });
+
   it('exports documents through the preview capture pipeline', async () => {
     const store = useAppStore();
     store.records = [

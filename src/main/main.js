@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
-const { app, BrowserWindow, dialog, ipcMain, nativeImage, screen, shell } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, screen, shell } = require('electron');
 const XLSX = require('xlsx');
 
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
@@ -21,6 +21,12 @@ if (isDevelopment) {
 
 const { getConfig, saveConfig, pushExportHistory } = require('./store');
 const { resolveCaptureLayout } = require('./export-capture');
+const {
+  parsePhoneSourceWorkbook,
+  parsePhoneTargetWorkbook,
+  analyzePhoneMatch,
+  exportMatchedWorkbook,
+} = require('./phone-match');
 const exportCaptureSessions = new Map();
 
 function normalizeName(value) {
@@ -264,8 +270,29 @@ app.whenReady().then(async () => {
     return result.filePaths[0];
   });
 
+  ipcMain.handle('clipboard:read-text', () => clipboard.readText());
   ipcMain.handle('template:download-import', async () => downloadImportTemplate());
   ipcMain.handle('workbook:parse', async (_, filePath) => parseWorkbook(filePath));
+  ipcMain.handle('phone-match:parse-source', async (_, filePath) => parsePhoneSourceWorkbook(filePath));
+  ipcMain.handle('phone-match:parse-target', async (_, filePath) => parsePhoneTargetWorkbook(filePath));
+  ipcMain.handle('phone-match:analyze', async (_, payload = {}) => (
+    analyzePhoneMatch(payload.sourceFilePath, payload.targetFilePath)
+  ));
+  ipcMain.handle('phone-match:export', async (_, payload = {}) => {
+    const sourceFilePath = String(payload.sourceFilePath || '').trim();
+    const targetFilePath = String(payload.targetFilePath || '').trim();
+    if (!sourceFilePath || !targetFilePath) {
+      throw new Error('请先导入手机号表格和匹配手机号表格');
+    }
+
+    const sourceName = sanitizeFileName(path.basename(targetFilePath, path.extname(targetFilePath)), '匹配结果');
+    const result = await dialog.showSaveDialog({
+      defaultPath: path.join(app.getPath('downloads'), `${sourceName}-已匹配.xlsx`),
+      filters: [{ name: 'Excel 文件', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    return exportMatchedWorkbook(sourceFilePath, targetFilePath, result.filePath);
+  });
   ipcMain.handle('asset:read-image-data-url', async (_, filePath) => readImageAsDataUrl(filePath));
   ipcMain.handle('exports:write-images', async (_, payload) => writeExportImages(payload));
   ipcMain.handle('asset:save-generated-stamp-image', async (_, payload) => saveGeneratedStampImage(payload));

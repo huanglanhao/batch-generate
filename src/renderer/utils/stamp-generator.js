@@ -16,7 +16,7 @@ const GENERATED_SEAL_END_ANGLE_NUDGE_DEGREES = 6;
 const GENERATED_SEAL_END_NUDGE_START = 0.72;
 const GENERATED_SEAL_EXTREME_END_RELAX_DEGREES = 3.5;
 const GENERATED_SEAL_EXTREME_END_START = 0.84;
-const DEFAULT_STAMP_FONT_KEY = 'electronic-seal';
+const DEFAULT_STAMP_FONT_KEY = 'guobiao-fangsong';
 const STAMP_FONT_OPTIONS = [
   {
     key: 'guobiao-fangsong',

@@ -24,7 +24,7 @@ describe('stamp generator', () => {
     expect(normalizeStampFontKey('xiaohe-songti-extra-light')).toBe('xiaohe-songti-extra-light');
     expect(normalizeStampFontKey('xiaohe-songti-light')).toBe('xiaohe-songti-light');
     expect(normalizeStampFontKey('yongzhong-songti')).toBe('yongzhong-songti');
-    expect(normalizeStampFontKey('unknown')).toBe('electronic-seal');
+    expect(normalizeStampFontKey('unknown')).toBe('guobiao-fangsong');
     expect(getStampFontOptions()).toEqual([
       { key: 'guobiao-fangsong', label: '国标仿宋' },
       { key: 'songti', label: '宋体' },

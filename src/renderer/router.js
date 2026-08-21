@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import WorkspacePage from './pages/WorkspacePage.vue';
 import StampPage from './pages/StampPage.vue';
 import ExportsPage from './pages/ExportsPage.vue';
+import MatchPage from './pages/MatchPage.vue';
 import CaptureExportPage from './pages/CaptureExportPage.vue';
 
 const router = createRouter({
@@ -11,6 +12,7 @@ const router = createRouter({
     { path: '/workspace', component: WorkspacePage },
     { path: '/stamp', component: StampPage },
     { path: '/exports', component: ExportsPage },
+    { path: '/match', component: MatchPage },
     { path: '/capture-export', component: CaptureExportPage, meta: { captureLayout: true, skipBootstrap: true } },
   ],
 });

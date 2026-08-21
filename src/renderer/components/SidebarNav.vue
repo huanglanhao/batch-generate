@@ -18,6 +18,7 @@ const items = [
   { to: '/workspace', label: '工作台', desc: '导表与模板' },
   { to: '/stamp', label: '盖章', desc: '位置与样式' },
   { to: '/exports', label: '记录', desc: '导出批次' },
+  { to: '/match', label: '匹配', desc: '手机号匹配' },
 ];
 
 const activePath = computed(() => route.path);
