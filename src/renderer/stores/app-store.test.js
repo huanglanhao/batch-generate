@@ -198,4 +198,34 @@ describe('app store bootstrap defaults', () => {
       }),
     }));
   });
+
+  it('imports one page name per non-empty line', () => {
+    const store = useAppStore();
+    store.workbookPath = '/tmp/old.xlsx';
+    store.matchedColumnName = 'template_name';
+    store.activePageIndex = 3;
+
+    expect(store.importNamesFromText('  店铺甲  \n\n店铺乙\r\n   \n店铺丙')).toBe(true);
+    expect(store.records).toEqual([
+      { rowIndex: 1, name: '店铺甲' },
+      { rowIndex: 2, name: '店铺乙' },
+      { rowIndex: 3, name: '店铺丙' },
+    ]);
+    expect(store.workbookPath).toBe('');
+    expect(store.matchedColumnName).toBe('');
+    expect(store.activePageIndex).toBe(0);
+    expect(store.importNamesFromText(' \n  ')).toBe(false);
+    expect(store.records).toHaveLength(3);
+  });
+
+  it('keeps the current names when the workbook dialog is cancelled', async () => {
+    const store = useAppStore();
+    store.records = [{ rowIndex: 1, name: '店铺甲' }];
+    window.applicationFormApi.selectExcelFile = vi.fn().mockResolvedValue(null);
+    window.applicationFormApi.parseWorkbook = vi.fn();
+
+    await expect(store.importWorkbook()).resolves.toBe(false);
+    expect(window.applicationFormApi.parseWorkbook).not.toHaveBeenCalled();
+    expect(store.records).toEqual([{ rowIndex: 1, name: '店铺甲' }]);
+  });
 });

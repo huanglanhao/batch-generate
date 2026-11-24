@@ -288,12 +288,29 @@ export const useAppStore = defineStore('application-form', {
     },
     async importWorkbook() {
       const filePath = await window.applicationFormApi.selectExcelFile();
-      if (!filePath) return;
+      if (!filePath) return false;
       const workbook = await window.applicationFormApi.parseWorkbook(filePath);
       this.workbookPath = workbook.filePath;
       this.records = workbook.records || [];
       this.matchedColumnName = workbook.matchedColumnName || '';
       this.activePageIndex = 0;
+      return true;
+    },
+    importNamesFromText(text) {
+      const records = String(text || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((name, index) => ({
+          rowIndex: index + 1,
+          name,
+        }));
+      if (!records.length) return false;
+      this.workbookPath = '';
+      this.matchedColumnName = '';
+      this.records = records;
+      this.activePageIndex = 0;
+      return true;
     },
     async downloadImportTemplate() {
       try {
